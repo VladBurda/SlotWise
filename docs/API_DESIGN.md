@@ -123,3 +123,41 @@ validation details. 401 unauthenticated, 403 forbidden, 404 missing or out-of-sc
 object, 409 slot/idempotency conflict, 412 stale version, 422 invalid input, 429 rate
 limited, 503 dependency/lock unavailable. No SQL errors, stack traces or PII in clients.
 The foundation health contract is independent of this future domain error envelope.
+
+## Phase 4 implemented catalog API
+
+All paths below have prefix `/api/v1/workspaces/{workspace_id}/catalog` and require
+a verified owner or manager. Other members receive 403; non-members receive 404.
+Cookie mutations use the existing Origin/CSRF protection.
+
+| Method | Path | Behavior |
+| --- | --- | --- |
+| GET | `/{kind}?offset=0&limit=20` | Name/ID ordered page, limit 1–100; includes inactive items |
+| POST | `/{kind}` | Create at version 0, return 201 with ID and version 1 |
+| PATCH | `/{kind}/{id}` | Replace complete configuration using current version; stale saves return 409 |
+| GET | `/{kind}/{id}/preview?start=2026-11-23&days=7` | Staff/resource effective UTC intervals after business hours and exclusions, max 31 days |
+| GET | `/services/{id}/matches?location_id=...&on_date=2026-11-23` | Qualified staff and candidates for each resource requirement; no booking guarantee |
+
+Kinds are `staff`, `skills`, `resources`, `pools`, `services`. Bodies contain the same
+`kind` discriminator as the path, plus name, active and version. Responses wrap them
+as `{ "id": "uuid", "data": { ...typed configuration... } }`; the returned `data`
+can be edited and sent as the next PATCH body. OpenAPI publishes each concrete schema.
+
+Staff has location_id, title, capacity, qualifications (skill_id/valid_until), availability.
+Resources have location_id, resource_type, capacity, attributes and availability.
+Pools have location_id, resource_type and resource_ids; every member must match both.
+Services have location_ids, required skill_ids, optional employee_ids and optional
+compatible_resource_ids. Empty employee/resource selections mean all otherwise eligible
+candidates. All selected skills are required, including active state and date validity.
+
+Service requirements select exactly one resource_id, pool_id or resource_type, with
+quantity (distinct assets) and units_per_resource. Specific assets/pools must be at
+every selected service location; use type requirements for multi-location services.
+Capacity reductions that contradict a specific service requirement return 409.
+Location/type changes of referenced items also return 409. Cross-tenant references,
+invalid rules, impossible specific capacity and mismatched pool members return 422.
+
+Duration ranges include both endpoints and advance by duration_step_minutes. Price is
+integer minor units (JPY has no decimal minor subdivision); supported currencies are
+EUR, USD, GBP, CAD, AUD, CHF, JPY and UAH. Minimum notice may inherit the business policy
+(null) or override it. Policy enforcement, allocation and payment are not performed here.

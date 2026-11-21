@@ -1,4 +1,4 @@
-name: Foundation checks
+name: SlotWise checks
 on: [push, pull_request]
 permissions:
   contents: read
@@ -59,6 +59,7 @@ jobs:
           node-version: '22'
       - run: docker compose config --quiet
       - run: docker compose up --build --wait --wait-timeout 240
+      - run: docker compose exec -T backend .venv/bin/alembic check
       - run: python infra/check_stack.py
       - run: docker compose --profile test run --build --rm test
       - run: pnpm install --frozen-lockfile

@@ -21,7 +21,7 @@ class BusinessProfile(Base):
 
 class Location(Base):
     __tablename__ = "locations"
-    __table_args__ = (UniqueConstraint("workspace_id", "id"),)
+    __table_args__ = (UniqueConstraint("workspace_id", "id", name="locations_workspace_id_id_key"),)
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
     workspace_id: Mapped[UUID] = mapped_column(ForeignKey("workspaces.id"), index=True)
     version: Mapped[int] = mapped_column(default=1)

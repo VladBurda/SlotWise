@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { z } from 'zod';
@@ -17,11 +17,17 @@ import {
 import { WorkspaceForm } from './WorkspaceForm';
 import { TeamPanel } from './TeamPanel';
 import { BusinessSettings } from '@/features/business/BusinessSettings';
+const CatalogPage = lazy(() =>
+  import('@/features/catalog/CatalogPage').then((module) => ({
+    default: module.CatalogPage,
+  })),
+);
 
 function VerifiedWorkspace({ user }: { user: User }) {
   const [search, setSearch] = useSearchParams();
   const [creating, setCreating] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [catalogOpen, setCatalogOpen] = useState(false);
   const cache = useQueryClient();
   const workspaces = useQuery({
     queryKey: ['workspaces', user.id],
@@ -101,19 +107,35 @@ function VerifiedWorkspace({ user }: { user: User }) {
         <>
           <nav className="form-actions" aria-label="Workspace sections">
             <Button
-              variant={settingsOpen ? 'outline' : 'default'}
-              onClick={() => setSettingsOpen(false)}
+              variant={settingsOpen || catalogOpen ? 'outline' : 'default'}
+              onClick={() => {
+                setSettingsOpen(false);
+                setCatalogOpen(false);
+              }}
             >
               Team
             </Button>
             <Button
-              variant={settingsOpen ? 'default' : 'outline'}
-              onClick={() => setSettingsOpen(true)}
+              variant={settingsOpen && !catalogOpen ? 'default' : 'outline'}
+              onClick={() => {
+                setSettingsOpen(true);
+                setCatalogOpen(false);
+              }}
             >
               Business settings
             </Button>
+            <Button
+              variant={catalogOpen ? 'default' : 'outline'}
+              onClick={() => setCatalogOpen(true)}
+            >
+              Scheduling setup
+            </Button>
           </nav>
-          {settingsOpen ? (
+          {catalogOpen ? (
+            <Suspense fallback={<p role="status">Loading scheduling setup…</p>}>
+              <CatalogPage key={selected.id} workspace={selected} />
+            </Suspense>
+          ) : settingsOpen ? (
             <BusinessSettings key={selected.id} workspace={selected} />
           ) : (
             <TeamPanel key={selected.id} workspace={selected} />

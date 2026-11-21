@@ -2,8 +2,9 @@
 
 ## Status and scope
 
-Phases 1–3 implement infrastructure, identity, sessions, workspaces, invitations,
-membership permissions, account UI, durable account mail and business configuration. Appointments,
+Phases 1–4 implement infrastructure, identity, sessions, workspaces, invitations,
+membership permissions, account UI, durable account mail, business configuration,
+staff qualifications/availability, resources/pools and service requirements. Appointments,
 optimization, general notifications and analytics remain designs for later phases.
 
 Phase 1 acceptance is verified on Ubuntu WSL2 with real Docker images, PostgreSQL,
@@ -201,3 +202,37 @@ Repeated autumn boundaries choose the earliest start and latest end, keeping the
 business continuously open across both folds; expanded overlaps are unioned.
 Opening-hour preview is not appointment availability. Policy enforcement for actual
 bookings and edits affecting existing reservations arrives with Phase 5.
+
+## Phase 4 — scheduling configuration
+
+The `catalog` domain owns staff, skills, physical resources, resource pools and services.
+Owners and managers can read and edit configuration; employee and customer memberships
+cannot access these internal endpoints. Profile titles describe scheduling duties, not
+account authorization. Workspace membership remains managed by the Team module.
+
+A closed, discriminated catalog model shares identity, name, active state, location
+and optimistic version across five kinds. This avoids duplicating CRUD and concurrency
+code while retaining distinct Pydantic contracts and pure scheduling functions.
+Catalog links, service locations, requirements and stable capacity units are relational,
+with composite tenant-and-kind foreign keys. Foreign references never live in JSON.
+Bounded scalar details and availability rules are validated JSONB value objects, edited
+atomically with their parent. This intentionally refines the earlier separate-table
+proposal: schedule rows currently have no independent lifecycle, permissions or query
+requirements. Extract them into relations if future analytics needs indexed rule queries.
+
+All writes take the workspace guard, validate references and dependent configuration,
+check the expected version, replace child selections, update capacity units and append
+an audit event in one transaction. Reads batch child tables rather than querying per
+item. Capacity reductions deactivate surplus units without deleting or renumbering them.
+Reactivation reuses the same unit IDs. Phase 5 must reject reductions affecting bookings.
+Catalog items are deactivated, not deleted. Location/type changes of referenced items
+are rejected until dependent service/pool selections are removed.
+
+The UI has Staff, Skills, Resources, Resource pools and Services sections, search,
+validated forms, explicit reload/discard actions and persisted configuration previews.
+The catalog screen loads on demand to keep its forms out of the initial bundle.
+Lists use paginated APIs; selection screens currently collect all pages for a workspace.
+Large-workspace remote-search selectors are a future scalability improvement.
+
+Verification also aligned earlier ORM unique-constraint names with their immutable
+Phase 2/3 migrations; no existing database constraint or migration was changed.

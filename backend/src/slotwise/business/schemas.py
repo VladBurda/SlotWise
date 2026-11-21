@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from datetime import date
 from typing import Literal, Self
 from uuid import UUID
@@ -54,7 +55,7 @@ class Interval(Input):
         return self
 
 
-def validate_intervals(items: list[Interval]) -> None:
+def validate_intervals(items: Sequence[Interval]) -> None:
     ordered = sorted(items, key=lambda item: item.start)
     if any(a.end > b.start for a, b in zip(ordered, ordered[1:], strict=False)):
         raise ValueError("Operating intervals must not overlap")

@@ -3,8 +3,9 @@
 This is the target normalized design. Phase 1 migrates `btree_gist`; Phase 2 revision
 `0002` adds users, sessions, refresh_tokens, action_tokens, workspaces, memberships,
 invitations, audit_logs and auth_mail. Phase 3 revision `0003` adds business_profiles,
-locations, opening_rules, operating_exceptions and exception_windows. Booking and
-resource tables remain planned.
+locations, opening_rules, operating_exceptions and exception_windows. Phase 4 revision
+`0004` adds catalog_items, catalog_links, service_locations, service_requirements and
+capacity_units. Booking tables remain planned. See the concrete Phase 4 mapping below.
 
 Identity records use UUID keys and UTC timestamptz. Email and workspace slug are
 unique. Membership uses composite `(workspace_id,user_id)` primary key. Invitations
@@ -130,3 +131,44 @@ Prefer inactive flags for catalog records referenced by history. Contact deletio
 uses a documented anonymization/retention process, not cascade deletion of booking
 history. No broad soft-delete framework. Customer data must not enter outbox payloads
 unnecessarily. Retention duration and lawful basis require business/legal decisions.
+
+## Phase 4 implemented storage (revision 0004)
+
+The earlier ER diagram is a domain target. The concrete Phase 4 representation is:
+
+```mermaid
+erDiagram
+  WORKSPACE ||--o{ CATALOG_ITEM : owns
+  LOCATION ||--o{ CATALOG_ITEM : hosts
+  CATALOG_ITEM ||--o{ CATALOG_LINK : source
+  CATALOG_ITEM ||--o{ CATALOG_LINK : target
+  CATALOG_ITEM ||--o{ CAPACITY_UNIT : divides
+  CATALOG_ITEM ||--o{ SERVICE_LOCATION : offered
+  LOCATION ||--o{ SERVICE_LOCATION : supports
+  CATALOG_ITEM ||--o{ SERVICE_REQUIREMENT : requires
+```
+
+- `catalog_items`: UUID, workspace, kind, name, active, version, optional location,
+  validated details JSONB. Kind is restricted to skills/staff/resources/pools/services;
+  staff/resources/pools require a tenant-scoped location. The kind is immutable.
+- `catalog_links`: tenant-scoped source/target references including kind. Permitted
+  edges are staff-to-skill, pool-to-resource, and service-to-skill/staff/resource.
+  Staff qualification links optionally expire at the end of an inclusive local date.
+- `service_locations`: a relational service/location selection, with composite FKs.
+- `service_requirements`: ordered rows with exactly one resource, pool or type selector,
+  asset quantity and units per asset. Quantities/units are bounded positive integers;
+  a specific asset has quantity one. Null selector combinations are explicitly rejected.
+- `capacity_units`: stable UUIDs for staff or resource capacity, numbered 1–100,
+  unique per item/number. Surplus units are retained inactive after a capacity reduction.
+
+Scalar details include duration bounds/increments, minor-unit price and supported currency,
+service buffers/notice override, resource attributes, staff job title and availability.
+Availability JSONB stores bounded weekly intervals/breaks, dated replacements and UTC
+unavailable periods. Relationships are normalized, never duplicated in the details JSON.
+API views reconstruct typed objects from batched joins. See the architecture decision
+for this deliberate refinement of the original separate-table design.
+
+No destructive catalog delete exists. Audit records hold identifiers and actions only.
+Migration 0004 is a fixed SQL snapshot independent of mutable ORM metadata. The future
+allocation table should reference `(workspace_id, capacity_unit_id)` for both staff
+and assets; no allocation/exclusion or reservation behavior is claimed in Phase 4.

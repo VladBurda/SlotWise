@@ -8,10 +8,22 @@ from slotwise.business.models import (
     OpeningRule,
     OperatingException,
 )
+from slotwise.catalog.models import (
+    CapacityUnit,
+    CatalogItem,
+    CatalogLink,
+    ServiceLocation,
+    ServiceRequirement,
+)
 from slotwise.notifications.models import AuthMail
 from slotwise.tenants.models import AuditLog, Invitation, Membership, Workspace
 
 __all__ = [
+    "CapacityUnit",
+    "CatalogItem",
+    "CatalogLink",
+    "ServiceLocation",
+    "ServiceRequirement",
     "BusinessProfile",
     "ExceptionWindow",
     "Location",

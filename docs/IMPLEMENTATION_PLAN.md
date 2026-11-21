@@ -3,8 +3,9 @@
 Work stops at every phase boundary for user approval. A phase can be implemented
 but still have explicit blocked verification; never treat a skipped gate as a pass.
 
-Current status (2026-11-21): **Phases 1–3 complete and verified**. Phase 3 was
-explicitly authorized by the user. **Phase 4 awaits approval.** See
+Current status (2026-11-21): **Phases 1–4 complete and verified**. Phase 4 was
+explicitly authorized by the user. **Phase 5 awaits approval.** The Phase 4 commit
+remains local until the user agrees to push. See
 `PROGRESS.md` for the acceptance evidence and remaining operational limitations.
 
 | Phase | Deliverable | Required gate |
@@ -70,3 +71,17 @@ N+1 schedule queries and added a PostgreSQL query-count regression test.
 - Tenant-scoped PostgreSQL persistence, composite foreign keys, CSRF/RBAC and stale-write tests.
 - Settings UI and saved-hours preview, verified on desktop/mobile against the real stack.
 - All previous tests, lint/type checks and builds pass; document evidence and stop before Phase 4.
+
+## Phase 4 acceptance checklist
+
+Completed on 2026-11-21; see `PROGRESS.md` for results and architecture refinements.
+
+- Staff profiles, active state, qualifications/expiry, eligibility and capacity.
+- Working hours, breaks, dated overrides and approved leave with location-zone previews.
+- Physical resources, attributes, maintenance, stable capacity units and compatible pools.
+- Services, variable duration, price, buffers, locations and specific/pool/type requirements.
+- Owner/manager management UI with safe reload, validation and configuration checks.
+- PostgreSQL tenant/type constraints, atomic/stale updates, capacity and qualification tests.
+- Full regression suite: 73 backend, 23 frontend and 12 desktop/mobile browser tests.
+- Production build, lint/types, migration consistency, health and SMTP checks passed.
+- Stop before Phase 5 and wait for agreement before pushing the local Phase 4 commit.

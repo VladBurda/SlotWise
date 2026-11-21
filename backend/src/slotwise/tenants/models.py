@@ -14,9 +14,10 @@ ROLE_CHECK = "role IN ('owner', 'manager', 'employee', 'customer')"
 
 class Workspace(Base):
     __tablename__ = "workspaces"
+    __table_args__ = (UniqueConstraint("slug", name="workspaces_slug_key"),)
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
     name: Mapped[str] = mapped_column(String(100))
-    slug: Mapped[str] = mapped_column(String(64), unique=True)
+    slug: Mapped[str] = mapped_column(String(64))
     timezone: Mapped[str] = mapped_column(String(64), default="UTC")
     suspended: Mapped[bool] = mapped_column(default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
@@ -40,7 +41,8 @@ class Invitation(Base):
     __tablename__ = "invitations"
     __table_args__ = (
         CheckConstraint(ROLE_CHECK, name="role"),
-        UniqueConstraint("workspace_id", "id"),
+        UniqueConstraint("workspace_id", "id", name="invitations_workspace_id_id_key"),
+        UniqueConstraint("token_hash", name="invitations_token_hash_key"),
     )
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
     workspace_id: Mapped[UUID] = mapped_column(
@@ -49,7 +51,7 @@ class Invitation(Base):
     )
     email: Mapped[str] = mapped_column(String(254))
     role: Mapped[Role] = mapped_column(String(20))
-    token_hash: Mapped[str] = mapped_column(String(64), unique=True)
+    token_hash: Mapped[str] = mapped_column(String(64))
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     accepted: Mapped[bool] = mapped_column(default=False)
     revoked: Mapped[bool] = mapped_column(default=False)

@@ -150,3 +150,29 @@ in a stable order, and revalidate inside one PostgreSQL transaction. Each capaci
 has a buffered time-range exclusion constraint. The appointment, allocations and outbox
 commit together; idempotency makes retries safe. We can optimize locking granularity
 after measuring contention without removing the database invariant.”
+
+## Phase 4 available domain functions
+
+`catalog.availability.operating_windows` expands staff/resource local rules using the
+assigned location's IANA zone, intersects business opening hours, merges repeated-hour
+windows and subtracts weekly breaks and approved time off/resource maintenance.
+Intervals are half-open UTC pairs. Dated exceptions replace weekly hours AND breaks;
+UTC exclusions still apply. A business holiday or inactive location closes the date.
+Missing weekly intervals mean unavailable, not an unrestricted resource. Overnight
+hours must be split at midnight. Nonexistent dated boundaries are rejected on save;
+recurring nonexistent boundaries yield a closed preview day with an explanatory issue.
+
+`catalog.eligibility.eligible_staff` checks active service/staff, service and staff
+location, explicit staff selections, all required active skills and inclusive
+qualification expiry dates. `configuration_matches` lists individually compatible
+resources for each requirement using type/pool/specific selection, location, activity,
+explicit compatibility and per-asset capacity. It reports insufficient candidate counts.
+It deliberately does not claim a simultaneous allocation: overlapping selectors may
+compete for the same units, and hours/reservations still require Phase 5 validation.
+
+Staff currently has one location per profile. Leave and maintenance are directly entered
+by owners/managers as approved UTC periods; employee requests/approval workflows and
+account-to-profile linking are not part of this phase. Availability is configuration,
+not appointment slots. The future booking transaction must resolve resource combinations,
+intersect all windows, validate duration/buffers/notice/horizon and qualifications at the
+appointment's local date, then atomically reserve stable capacity units.

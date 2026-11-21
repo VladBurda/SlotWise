@@ -60,6 +60,184 @@ async function login(page: Page, email: string, value = password) {
   await expect(page).toHaveURL(/\/app/);
 }
 
+test('configure staff, assets and services with qualified matches', async ({
+  page,
+  request,
+  isMobile,
+}) => {
+  test.skip(
+    process.env.SLOTWISE_FULL_STACK !== '1',
+    'Requires real Compose stack',
+  );
+  test.setTimeout(120000);
+  page.on('dialog', (dialog) => dialog.accept());
+  const run = randomUUID().slice(0, 8);
+  const email = `catalog-${run}@example.com`;
+  await registerAndVerify(page, request, email);
+  await login(page, email);
+  await page
+    .getByLabel('Workspace name', { exact: true })
+    .fill(`Workshop ${run}`);
+  await page.getByLabel('Workspace address').fill(`catalog-${run}`);
+  await page
+    .getByRole('button', { name: 'Create workspace', exact: true })
+    .click();
+  await page
+    .getByRole('button', { name: 'Business settings', exact: true })
+    .click();
+  await page.getByRole('button', { name: 'Add location', exact: true }).click();
+  await page.getByLabel('Location name', { exact: true }).fill('Main workshop');
+  await page
+    .getByRole('button', { name: 'Add monday interval', exact: true })
+    .click();
+  await page
+    .getByRole('button', { name: 'Save location', exact: true })
+    .click();
+  await expect(
+    page.getByText('Location saved.', { exact: true }),
+  ).toBeVisible();
+  await page
+    .getByRole('button', { name: 'Scheduling setup', exact: true })
+    .click();
+
+  await page.getByRole('button', { name: 'Skills', exact: true }).click();
+  await page.getByRole('button', { name: 'Add skills', exact: true }).click();
+  await page.getByLabel('Name', { exact: true }).fill('Diagnostics');
+  await page.getByRole('button', { name: 'Save skills', exact: true }).click();
+  await expect(
+    page.getByText('Diagnostics saved.', { exact: true }),
+  ).toBeVisible();
+
+  await page.getByRole('button', { name: 'Staff', exact: true }).click();
+  await page.getByRole('button', { name: 'Add staff', exact: true }).click();
+  await page.getByLabel('Name', { exact: true }).fill('Alex Morgan');
+  await page
+    .getByLabel('Job title', { exact: true })
+    .fill('Diagnostic technician');
+  await page
+    .getByRole('group', { name: 'Qualifications', exact: true })
+    .getByLabel('Diagnostics', { exact: true })
+    .check();
+  await page
+    .getByRole('button', { name: 'Add working hours', exact: true })
+    .click();
+  await page.getByLabel('weekly start 1', { exact: true }).fill('08:30');
+  await page.getByRole('button', { name: 'Add break', exact: true }).click();
+  await page.getByRole('button', { name: 'Save staff', exact: true }).click();
+  await expect(
+    page.getByText('Alex Morgan saved.', { exact: true }),
+  ).toBeVisible();
+  await page.getByLabel('Check date', { exact: true }).fill('2026-11-23');
+  await page
+    .getByRole('button', { name: 'Preview seven days', exact: true })
+    .click();
+  await expect(
+    page.getByText('Location time zone: Europe/Berlin', { exact: true }),
+  ).toBeVisible();
+  if (process.env.SLOTWISE_CAPTURE === '1')
+    await page.screenshot({
+      path: `../docs/screenshots/staff-${isMobile ? 'mobile' : 'desktop'}.png`,
+      fullPage: true,
+    });
+
+  await page.getByRole('button', { name: 'Resources', exact: true }).click();
+  await page
+    .getByRole('button', { name: 'Add resources', exact: true })
+    .click();
+  await page.getByLabel('Name', { exact: true }).fill('Diagnostic room');
+  await page.getByLabel('Capacity', { exact: false }).fill('2');
+  await page
+    .getByRole('button', { name: 'Add working hours', exact: true })
+    .click();
+  await page
+    .getByRole('button', { name: 'Save resources', exact: true })
+    .click();
+  await expect(
+    page.getByText('Diagnostic room saved.', { exact: true }),
+  ).toBeVisible();
+
+  await page
+    .getByRole('button', { name: 'Resource pools', exact: true })
+    .click();
+  await page
+    .getByRole('button', { name: 'Add resource pools', exact: true })
+    .click();
+  await page.getByLabel('Name', { exact: true }).fill('Diagnostic rooms');
+  await page.getByLabel('Diagnostic room', { exact: true }).check();
+  await page
+    .getByRole('button', { name: 'Save resource pools', exact: true })
+    .click();
+  await expect(
+    page.getByText('Diagnostic rooms saved.', { exact: true }),
+  ).toBeVisible();
+
+  await page.getByRole('button', { name: 'Services', exact: true }).click();
+  await page.getByRole('button', { name: 'Add services', exact: true }).click();
+  await page.getByLabel('Name', { exact: true }).fill('Vehicle diagnostics');
+  await page
+    .getByLabel('Maximum duration (minutes)', { exact: true })
+    .fill('60');
+  await page
+    .getByRole('group', {
+      name: 'Required skills (all must match)',
+      exact: true,
+    })
+    .getByLabel('Diagnostics', { exact: true })
+    .check();
+  await page
+    .getByRole('group', {
+      name: 'Eligible staff (empty means all qualified staff)',
+      exact: true,
+    })
+    .getByLabel('Alex Morgan', { exact: true })
+    .check();
+  await page
+    .getByRole('button', { name: 'Add resource requirement', exact: true })
+    .click();
+  await page
+    .getByRole('combobox', { name: 'Requirement selector', exact: true })
+    .selectOption('pool');
+  await page
+    .getByRole('combobox', { name: 'Required pool', exact: true })
+    .selectOption({ label: 'Diagnostic rooms' });
+  await page.getByLabel('Units per asset', { exact: true }).fill('2');
+  await page
+    .getByRole('button', { name: 'Save services', exact: true })
+    .click();
+  await expect(
+    page.getByText('Vehicle diagnostics saved.', { exact: true }),
+  ).toBeVisible();
+  await page.reload();
+  await page
+    .getByRole('button', { name: 'Scheduling setup', exact: true })
+    .click();
+  await page.getByRole('button', { name: 'Services', exact: true }).click();
+  await page
+    .getByRole('button', { name: 'Edit Vehicle diagnostics', exact: true })
+    .click();
+  await expect(
+    page.getByLabel('Maximum duration (minutes)', { exact: true }),
+  ).toHaveValue('60');
+  await page.getByLabel('Check date', { exact: true }).fill('2026-11-23');
+  await page
+    .getByRole('button', { name: 'Check staff and resources', exact: true })
+    .click();
+  await expect(
+    page.getByRole('heading', { name: 'Qualified staff', exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('status').filter({ hasText: 'Qualified staff' }),
+  ).toContainText('Alex Morgan');
+  await expect(
+    page.getByRole('status').filter({ hasText: 'Qualified staff' }),
+  ).toContainText('Diagnostic room');
+  if (process.env.SLOTWISE_CAPTURE === '1')
+    await page.screenshot({
+      path: `../docs/screenshots/service-${isMobile ? 'mobile' : 'desktop'}.png`,
+      fullPage: true,
+    });
+});
+
 test.describe('account lifecycle against PostgreSQL and Mailpit', () => {
   test.skip(
     process.env.SLOTWISE_FULL_STACK !== '1',

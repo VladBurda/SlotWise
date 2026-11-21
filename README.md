@@ -2,7 +2,7 @@
 
 Intelligent appointment and resource scheduling, built as a Python/TypeScript
 portfolio application. **Current scope: foundation plus secure accounts and
-workspaces and business configuration (Phases 1–3).** Appointment scheduling is a later phase;
+workspaces, business configuration, staff, resources and services (Phases 1–4).** Appointment scheduling is a later phase;
 this is not ready for business use or public deployment.
 
 ![Phase 1 desktop foundation](docs/screenshots/foundation-desktop.png)
@@ -41,6 +41,34 @@ Verified screenshots: [desktop settings](docs/screenshots/settings-desktop.png),
 [mobile saved-hours preview](docs/screenshots/hours-preview-mobile.png).
 
 ## Local development
+
+### Configure staff, resources and services
+
+Open **Scheduling setup** in a verified owner or manager workspace:
+
+1. Create locations and opening hours in **Business settings**.
+2. Add **Skills**, then **Staff** profiles with qualifications, expiry dates,
+   capacity, weekly hours, breaks, dated exceptions and approved leave.
+3. Add **Resources** with a location, type, capacity, attributes, availability and
+   maintenance. Group interchangeable assets into **Resource pools**.
+4. Add **Services** with duration bounds, price, buffers, locations, required skills,
+   eligible staff and resource requirements. Empty staff/resource selections allow
+   all otherwise eligible candidates; skill requirements always apply.
+5. Save, then use the seven-day staff/resource preview or **Check staff and resources**
+   for a service. These inspect configuration; they do not reserve appointments.
+
+Resource quantity means distinct assets; units per asset means simultaneous capacity.
+Deactivate records to preserve configuration and stable capacity-unit IDs. A stale
+save keeps your draft and asks you to reload. Staff job titles do not grant account
+permissions. Time off and maintenance use explicit UTC inputs; previews display the
+location's IANA zone. Staff profiles currently belong to one location.
+
+Screenshots: [staff desktop](docs/screenshots/staff-desktop.png),
+[staff mobile](docs/screenshots/staff-mobile.png),
+[service desktop](docs/screenshots/service-desktop.png),
+[service mobile](docs/screenshots/service-mobile.png).
+
+### Start the stack
 
 Prerequisites: Docker Engine/Desktop with Compose v2, Python 3.13, uv 0.13.6,
 Node 22.12+ and pnpm 10.11.0. With Node installed, enable pnpm using
@@ -204,5 +232,5 @@ buffered PostgreSQL exclusion constraint. Outbox events and idempotency records 
 with appointments. See the scheduling document for locking order and retry handling.
 
 No booking concurrency benchmark, optimization benchmark, demo credentials or production
-readiness claim is available at this phase. Celery, OR-Tools, FullCalendar and business
+readiness claim is available at this phase. Celery, OR-Tools, FullCalendar and appointment
 modules will be added when their roadmap phases are approved.

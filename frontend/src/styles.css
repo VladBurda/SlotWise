@@ -1151,3 +1151,44 @@ footer span:last-child {
     grid-column: 1 / -1;
   }
 }
+/* Scheduling configuration */
+.catalog-tabs,
+.catalog-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: end;
+  margin-block: 1rem;
+}
+.catalog-row > label {
+  flex: 1 1 150px;
+  min-width: 0;
+}
+.catalog-subpanel {
+  padding: 1rem;
+  margin-block: 1rem;
+  border: 1px solid #dce4eb;
+  border-radius: 12px;
+}
+.catalog-choices {
+  padding: 1rem;
+  margin-block: 1rem;
+  border: 1px solid #dce4eb;
+  border-radius: 12px;
+}
+.catalog-choices legend {
+  font-weight: 600;
+  padding-inline: 0.4rem;
+}
+.catalog-editor > fieldset {
+  min-width: 0;
+  border: 0;
+  padding: 0;
+}
+.schedule-editor h4 {
+  margin-top: 1.5rem;
+}
+.catalog-editor small {
+  color: #526171;
+  font-size: 0.8rem;
+}

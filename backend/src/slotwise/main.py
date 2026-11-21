@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from slotwise.api.v1.health import router
 from slotwise.auth.routes import router as auth_router
 from slotwise.business.routes import router as business_router
+from slotwise.catalog.routes import router as catalog_router
 from slotwise.core.config import Settings, get_settings
 from slotwise.core.errors import DomainError
 from slotwise.core.logging import configure_logging
@@ -131,6 +132,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(auth_router, prefix="/api/v1")
     app.include_router(tenant_router, prefix="/api/v1")
     app.include_router(business_router, prefix="/api/v1")
+    app.include_router(catalog_router, prefix="/api/v1")
     return app
 
 

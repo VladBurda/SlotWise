@@ -1,7 +1,7 @@
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, String
+from sqlalchemy import Boolean, DateTime, ForeignKey, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from slotwise.db.base import Base
@@ -13,8 +13,9 @@ def now() -> datetime:
 
 class User(Base):
     __tablename__ = "users"
+    __table_args__ = (UniqueConstraint("email", name="users_email_key"),)
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
-    email: Mapped[str] = mapped_column(String(254), unique=True)
+    email: Mapped[str] = mapped_column(String(254))
     name: Mapped[str] = mapped_column(String(100))
     password_hash: Mapped[str] = mapped_column(String(255))
     verified: Mapped[bool] = mapped_column(Boolean, default=False)
@@ -23,9 +24,10 @@ class User(Base):
 
 class Session(Base):
     __tablename__ = "sessions"
+    __table_args__ = (UniqueConstraint("access_hash", name="sessions_access_hash_key"),)
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
     user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
-    access_hash: Mapped[str] = mapped_column(String(64), unique=True)
+    access_hash: Mapped[str] = mapped_column(String(64))
     csrf_hash: Mapped[str] = mapped_column(String(64))
     access_expires: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))

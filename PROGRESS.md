@@ -4,7 +4,8 @@ Updated: 2026-11-21 (Europe/Berlin).
 
 ## Current status
 
-**Phases 1–3 are complete and verified. Phase 4 awaits approval.**
+**Phases 1–4 are complete and verified. Phase 5 awaits approval.**
+Phase 4 is committed locally after verification; pushing requires the user's agreement.
 Phase 2 was authorized by the continuation request after closing the Phase 1 Docker gap.
 
 ## Phase 1 retained
@@ -170,10 +171,11 @@ stable execution. No test timeout or acceptance criterion was weakened.
 - Upstream dependency warnings and the existing development deployment limitations remain.
   No remote CI, commit, push or production deployment was performed.
 
-## Next phase — awaiting approval
+## Phase 3 boundary (historical)
 
 Phase 4 adds staff/skills/availability, resource units/pools and services/requirements,
-with tenant constraints, qualification/capacity tests and management forms. Stop here.
+with tenant constraints, qualification/capacity tests and management forms. This work
+was subsequently authorized and completed below.
 
 ## Phase 3 continuation — 2026-11-21
 
@@ -200,3 +202,67 @@ Fresh verification:
   localhost access after sandbox-only launch/navigation failures. No assertions changed.
 
 No Phase 4 work, remote CI, commit, push or deployment was performed.
+
+## Phase 4 — complete and verified (2026-11-21)
+
+### Delivered
+
+- Staff profiles with scheduling titles, location, active state, capacity, qualifications
+  and inclusive expiry dates; explicit service eligibility and required-skill matching.
+- Weekly availability, breaks, dated replacement hours, approved time off and resource
+  maintenance, intersected with location opening hours in DST-aware UTC previews.
+- Resources with type, location, attributes, capacity and stable capacity-unit UUIDs.
+  Pool members must share a location/type; deactivation retains configuration/history.
+- Services with variable duration, minor-unit price/currency, buffers, notice override,
+  locations, qualifications, compatible staff/assets and specific/pool/type requirements.
+- Responsive management screens, search, loading/error states, stale-save recovery,
+  configuration-match checks, desktop/mobile screenshots and lazy-loaded catalog UI.
+- Immutable migration 0004, tenant-and-kind composite foreign keys, atomic versioned
+  changes under the workspace lock, audit events and batched relationship loading.
+- Model constraint names now match the existing Phase 2/3 migrations. CI includes
+  `alembic check`; no old migrations or live uniqueness constraints were changed.
+
+### Verification
+
+| Check | Result |
+| --- | --- |
+| Full backend suite against PostgreSQL/Redis | **73 passed** (47 existing + 26 Phase 4) |
+| Frontend component/unit suite | **23 passed** (17 existing + 6 Phase 4) |
+| Full-stack Playwright | **12 passed**, desktop/mobile |
+| Ruff lint/format and mypy | Passed; 40 application source files typed |
+| TypeScript, ESLint, Prettier | Passed |
+| Docker production build and health-gated startup | Passed |
+| Migration consistency | `No new upgrade operations detected` |
+| HTTP/OpenAPI and SMTP smoke checks | Passed |
+| Visual review | Staff desktop/mobile and service mobile reviewed; screenshots retained |
+| Remote CI / push | Not run; push awaits explicit user agreement |
+
+Tests exercise tenant access and relational foreign keys, role/CSRF enforcement,
+configuration round trips, qualification expiry, capacity/selector validation, pool
+compatibility, stable units after reductions/restoration, concurrent stale edits,
+DST transitions, breaks/leave/opening-hour intersections and browser persistence.
+Browser verification caught duplicate React sibling keys that left an old editor
+visible; the fix has a regression test. A select locator was changed to the observed
+accessible combobox role. Final backend run has one upstream TestClient deprecation.
+
+After the session resumed, Docker Desktop owned the default socket while the original
+Ubuntu Docker stack still owned the localhost ports. Final backend verification ran in
+the isolated `slotwise-phase4-check` Compose project with published ports reset via
+an ignored `.cache/phase4-compose.yml` override; all five runtime services became
+healthy and fresh migrations applied. Browser/smoke tests used the existing rebuilt
+Ubuntu stack. No existing service or database was deleted to resolve the port conflict.
+The temporary verification project was stopped after checks, retaining its volumes.
+
+### Decisions and phase boundary
+
+The catalog uses explicit kind-specific contracts with shared identity/version storage.
+Relationships, requirements and units are relational; bounded scalar and availability
+value objects use validated JSONB. See architecture/database docs for the rationale.
+Owners and managers configure schedules directly; employee leave requests/approval,
+account-to-profile links and multi-location staff assignments remain future extensions.
+Selectors currently load all paginated catalog records for the selected workspace.
+
+Configuration matches do not prove simultaneous resource allocation or reserve a slot.
+Phase 5 must enforce booking policies, buffers, existing reservations and capacity
+reductions against bookings in a transaction with database exclusion protection.
+No Phase 5 implementation, public deployment or push was performed.
