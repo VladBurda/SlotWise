@@ -1,0 +1,300 @@
+import { randomUUID } from 'node:crypto';
+import {
+  expect,
+  test,
+  type APIRequestContext,
+  type Page,
+} from '@playwright/test';
+import { z } from 'zod';
+
+const password = 'Browser-test-password-42';
+async function emailLink(
+  request: APIRequestContext,
+  email: string,
+  subject: string,
+): Promise<string> {
+  let id = '';
+  await expect
+    .poll(
+      async () => {
+        const result = await request.get(
+          `http://127.0.0.1:8025/api/v1/search?query=${encodeURIComponent(`to:${email} subject:"${subject}"`)}`,
+        );
+        const list = z
+          .object({ messages: z.array(z.object({ ID: z.string() })) })
+          .parse(await result.json());
+        id = list.messages[0]?.ID ?? '';
+        return id;
+      },
+      { timeout: 30000, intervals: [500, 1000] },
+    )
+    .not.toBe('');
+  const result = await request.get(
+    `http://127.0.0.1:8025/api/v1/message/${id}`,
+  );
+  const mail = z.object({ Text: z.string() }).parse(await result.json());
+  const match = mail.Text.match(/http:\/\/localhost:5173(\/account\/[^\s]+)/);
+  if (!match?.[1]) throw new Error('Expected local account link in email');
+  return match[1];
+}
+async function registerAndVerify(
+  page: Page,
+  request: APIRequestContext,
+  email: string,
+) {
+  await page.goto('/account/register');
+  await page.getByLabel('Your name').fill('Browser Test');
+  await page.getByLabel('Email address').fill(email);
+  await page.getByLabel('Password', { exact: true }).fill(password);
+  await page.getByRole('button', { name: 'Create account' }).click();
+  await expect(page.getByRole('status')).toContainText('verification email');
+  await page.goto(await emailLink(request, email, 'Verify'));
+  await page.getByRole('button', { name: 'Verify email' }).click();
+  await expect(page.getByRole('status')).toContainText('Email verified');
+}
+async function login(page: Page, email: string, value = password) {
+  await page.goto('/account/login');
+  await page.getByLabel('Email address').fill(email);
+  await page.getByLabel('Password', { exact: true }).fill(value);
+  await page.getByRole('button', { name: 'Sign in' }).click();
+  await expect(page).toHaveURL(/\/app/);
+}
+
+test.describe('account lifecycle against PostgreSQL and Mailpit', () => {
+  test.skip(
+    process.env.SLOTWISE_FULL_STACK !== '1',
+    'Requires real Compose stack',
+  );
+  test('owner onboarding, invitation, role change, switching and password reset', async ({
+    page,
+    request,
+    browser,
+    isMobile,
+  }) => {
+    test.setTimeout(120000);
+    const run = randomUUID().slice(0, 8);
+    const owner = `owner-${run}@example.com`,
+      employee = `employee-${run}@example.com`;
+    if (process.env.SLOTWISE_CAPTURE === '1') {
+      await page.goto('/account/login');
+      await page.screenshot({
+        path: `../docs/screenshots/login-${isMobile ? 'mobile' : 'desktop'}.png`,
+        fullPage: true,
+      });
+    }
+    await registerAndVerify(page, request, owner);
+    await login(page, owner);
+    await page
+      .getByLabel('Workspace name', { exact: true })
+      .fill(`Studio ${run}`);
+    await page.getByLabel('Workspace address').fill(`studio-${run}`);
+    await page
+      .getByRole('button', { name: 'Create workspace', exact: true })
+      .click();
+    await expect(
+      page.getByRole('heading', { name: `Studio ${run}` }),
+    ).toBeVisible();
+    await page.getByLabel('Teammate email').fill(employee);
+    await page
+      .getByRole('combobox', { name: 'Workspace role', exact: true })
+      .selectOption('employee');
+    await page.getByRole('button', { name: 'Send invitation' }).click();
+    await expect(page.getByRole('status')).toContainText('Invitation queued');
+    const invitation = await emailLink(request, employee, 'invitation');
+    const teammateContext = await browser.newContext({
+      baseURL: 'http://127.0.0.1:5173',
+    });
+    try {
+      const teammate = await teammateContext.newPage();
+      await registerAndVerify(teammate, request, employee);
+      await login(teammate, employee);
+      await teammate.goto(`http://127.0.0.1:5173${invitation}`);
+      await teammate.getByRole('button', { name: 'Accept invitation' }).click();
+      await expect(
+        teammate.getByRole('heading', { name: `Studio ${run}` }),
+      ).toBeVisible();
+      await expect(
+        teammate.getByText('Your employee membership is active.', {
+          exact: false,
+        }),
+      ).toBeVisible();
+      await expect(
+        teammate.getByRole('button', { name: 'Send invitation' }),
+      ).toHaveCount(0);
+      await page.reload();
+      const member = page
+        .getByRole('listitem')
+        .filter({ has: page.getByText(employee, { exact: true }) })
+        .filter({ has: page.getByRole('button', { name: 'Save role' }) });
+      await member.getByLabel(`Role for ${employee}`).selectOption('manager');
+      await member.getByRole('button', { name: 'Save role' }).click();
+      await expect(
+        member.getByRole('button', { name: 'Save role' }),
+      ).toBeDisabled();
+      await teammate.reload();
+      await expect(
+        teammate.getByRole('heading', { name: 'Your team' }),
+      ).toBeVisible();
+      await page.getByRole('button', { name: 'New workspace' }).click();
+      await page
+        .getByLabel('Workspace name', { exact: true })
+        .fill(`Second ${run}`);
+      await page.getByLabel('Workspace address').fill(`second-${run}`);
+      await page
+        .getByRole('button', { name: 'Create workspace', exact: true })
+        .click();
+      await expect(
+        page.getByRole('heading', { name: `Second ${run}` }),
+      ).toBeVisible();
+      await page
+        .getByLabel('Current workspace')
+        .selectOption({ label: `Studio ${run}` });
+      await expect(
+        page.getByRole('heading', { name: `Studio ${run}` }),
+      ).toBeVisible();
+      await teammate.goto('/account/forgot');
+      await teammate.getByLabel('Email address').fill(employee);
+      await teammate.getByRole('button', { name: 'Send reset link' }).click();
+      await teammate.goto(await emailLink(request, employee, 'Reset'));
+      await teammate
+        .getByLabel('Password', { exact: true })
+        .fill(password + '-new');
+      await teammate.getByRole('button', { name: 'Update password' }).click();
+      await expect(teammate.getByRole('status')).toContainText(
+        'Password updated',
+      );
+      await login(teammate, employee, password + '-new');
+      await teammate.getByRole('button', { name: 'Sign out' }).click();
+      await expect(teammate).toHaveURL(/\/account\/login/);
+      await teammate.goto('/app');
+      await expect(teammate).toHaveURL(/\/account\/login/);
+    } finally {
+      await teammateContext.close();
+    }
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    ).toBe(true);
+    if (process.env.SLOTWISE_CAPTURE === '1') {
+      await page.screenshot({
+        path: `../docs/screenshots/workspace-${isMobile ? 'mobile' : 'desktop'}.png`,
+        fullPage: true,
+      });
+    }
+  });
+});
+
+test('business settings persist hours, exceptions and DST previews', async ({
+  page,
+  request,
+  isMobile,
+}) => {
+  test.skip(
+    process.env.SLOTWISE_FULL_STACK !== '1',
+    'Requires real Compose stack',
+  );
+  test.setTimeout(120000);
+  const run = randomUUID().slice(0, 8);
+  const email = `settings-${run}@example.com`;
+  await registerAndVerify(page, request, email);
+  await login(page, email);
+  await page
+    .getByLabel('Workspace name', { exact: true })
+    .fill(`Business ${run}`);
+  await page.getByLabel('Workspace address').fill(`business-${run}`);
+  await page
+    .getByRole('button', { name: 'Create workspace', exact: true })
+    .click();
+  await page
+    .getByRole('button', { name: 'Business settings', exact: true })
+    .click();
+  await page
+    .getByLabel('Business name', { exact: true })
+    .fill(`Configured ${run}`);
+  await page.getByLabel('Contact email').fill(`contact-${run}@example.com`);
+  await page
+    .getByLabel('Preparation buffer (minutes)', { exact: true })
+    .fill('10');
+  await page.getByRole('button', { name: 'Save business settings' }).click();
+  await expect(page.getByRole('status')).toContainText(
+    'Business settings saved',
+  );
+  await page.getByRole('button', { name: 'Add location', exact: true }).click();
+  await page.getByLabel('Location name', { exact: true }).fill('Berlin studio');
+  await page
+    .getByLabel('Location time zone', { exact: true })
+    .fill('Europe/Berlin');
+  await page
+    .getByRole('button', { name: 'Add sunday interval', exact: true })
+    .click();
+  await page.getByLabel('Sunday start 1', { exact: true }).fill('00:00');
+  await page.getByLabel('Sunday end 1', { exact: true }).fill('04:00');
+  await page.getByRole('button', { name: 'Add dated exception' }).click();
+  await page.getByLabel('Exception date 1', { exact: true }).fill('2026-12-27');
+  await page
+    .getByLabel('Exception label 1', { exact: true })
+    .fill('Winter holiday');
+  await page.getByRole('button', { name: 'Add dated exception' }).click();
+  await page.getByLabel('Exception date 2', { exact: true }).fill('2026-12-20');
+  await page
+    .getByRole('combobox', { name: 'Exception type 2', exact: true })
+    .selectOption('special');
+  await page.getByLabel('Exception 2 start 1', { exact: true }).fill('10:00');
+  await page.getByLabel('Exception 2 end 1', { exact: true }).fill('12:00');
+  await page
+    .getByRole('button', { name: 'Save location', exact: true })
+    .click();
+  await expect(
+    page.getByRole('heading', { name: 'Saved operating-hours preview' }),
+  ).toBeVisible();
+  await page.getByLabel('Preview from').fill('2026-03-29');
+  await expect(page.locator('.operating-preview')).toContainText('00:00 GMT+1');
+  await expect(page.locator('.operating-preview')).toContainText('04:00 GMT+2');
+  await page.getByLabel('Preview from').fill('2026-10-25');
+  await expect(page.locator('.operating-preview')).toContainText('00:00 GMT+2');
+  await expect(page.locator('.operating-preview')).toContainText('04:00 GMT+1');
+  await page.reload();
+  await page
+    .getByRole('button', { name: 'Business settings', exact: true })
+    .click();
+  await expect(page.getByLabel('Business name', { exact: true })).toHaveValue(
+    `Configured ${run}`,
+  );
+  await expect(
+    page.getByLabel('Preparation buffer (minutes)', { exact: true }),
+  ).toHaveValue('10');
+  await page
+    .getByRole('button', { name: 'Open Berlin studio', exact: true })
+    .click();
+  await page.getByLabel('Preview from').fill('2026-12-27');
+  await expect(page.locator('.operating-preview')).toContainText(
+    'Winter holiday',
+  );
+  await page.getByLabel('Preview from').fill('2026-12-20');
+  await expect(page.locator('.operating-preview')).toContainText('10:00 GMT+1');
+  await page.getByLabel('Location is active').uncheck();
+  await page
+    .getByRole('button', { name: 'Save location', exact: true })
+    .click();
+  await expect(page.locator('.operating-preview')).toContainText('inactive');
+  await page.getByLabel('Location is active').check();
+  await page
+    .getByRole('button', { name: 'Save location', exact: true })
+    .click();
+  await expect(page.locator('.operating-preview li').first()).toContainText(
+    'special',
+  );
+  await expect(page.locator('.location-list')).toContainText(
+    'Europe/Berlin · Active',
+  );
+  if (process.env.SLOTWISE_CAPTURE === '1') {
+    await page.screenshot({
+      path: `../docs/screenshots/settings-${isMobile ? 'mobile' : 'desktop'}.png`,
+      fullPage: true,
+    });
+    await page.locator('.operating-preview').screenshot({
+      path: `../docs/screenshots/hours-preview-${isMobile ? 'mobile' : 'desktop'}.png`,
+    });
+  }
+});
