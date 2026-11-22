@@ -247,3 +247,13 @@ enforce existing catalog semantics. The internal owner/manager API reports expli
 that appointment persistence is absent. Booking writes must revalidate under transaction
 locks and database exclusion constraints; an availability response cannot authorize a
 reservation. No UI or database schema change belongs to this first milestone.
+
+The second Phase 5 milestone adds persistent booking transactions and migration 0005.
+Availability now includes committed allocations. Booking creation/rescheduling use
+the same engine with an exact start, retain the workspace lock through commit, and
+acquire unit locks in stable order. PostgreSQL exclusion enforces buffered capacity
+independently. Versioned history, audit and idempotency receipts share the transaction.
+Booking events form durable outbox input; delivery is intentionally deferred. Internal
+owner/manager routes enforce cancellation policies; public ownership and UI are pending.
+Configuration updates conservatively reject upcoming allocations until explicit conflict
+resolution exists. See the API/engine docs for limits and retry behavior.

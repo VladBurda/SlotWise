@@ -150,6 +150,7 @@ def feasible_slots(
     now: datetime,
     *,
     budget: Budget | None = None,
+    only_start: datetime | None = None,
 ) -> SearchResult:
     if now.utcoffset() is None:
         raise ValueError("Current time must be timezone-aware")
@@ -183,7 +184,9 @@ def feasible_slots(
             for offset in range(query.days)
             for minute in range(0, 1440, policies.slot_interval_minutes)
             for instant in instants(query.start + timedelta(days=offset), minute, location.timezone)
-            if earliest <= instant and instant + elapsed <= horizon
+            if earliest <= instant
+            and instant + elapsed <= horizon
+            and (only_start is None or instant == only_start)
         }
     )
     if not starts:

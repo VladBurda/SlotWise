@@ -23,6 +23,7 @@ from slotwise.business.schemas import (
     WeeklyInterval,
 )
 from slotwise.core.errors import DomainError
+from slotwise.scheduling.guards import protect_bookings
 from slotwise.tenants.service import TenantService
 
 
@@ -42,6 +43,7 @@ class BusinessService(TenantService):
 
     async def save_profile(self, workspace_id: UUID, data: ProfileInput) -> ProfileInput:
         workspace, _ = await self.access(workspace_id, {"owner"}, lock=True)
+        await protect_bookings(self.db, workspace_id)
         profile = await self.db.get(BusinessProfile, workspace_id)
         self.check_version(profile.version if profile else 0, data.version)
         if profile is None:
@@ -160,6 +162,7 @@ class BusinessService(TenantService):
         else:
             location = await self.location(workspace_id, location_id)
             self.check_version(location.version, data.version)
+            await protect_bookings(self.db, workspace_id, location_id)
         for exception in data.exceptions:
             for interval in exception.intervals:
                 try:

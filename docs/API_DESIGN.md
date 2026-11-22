@@ -172,12 +172,39 @@ IDs return 404; disallowed roles 403; invalid duration/location or search budget
 exhaustion 422 (`invalid_availability` or `search_too_complex`).
 
 The result contains `computed_at`, location `timezone`, UTC `slots`, `truncated`,
-`warnings`, `reservation_aware: false`, and a configuration-only notice. Each slot has
+`warnings`, `reservation_aware: true`, and a notice that results do not reserve slots. Each slot has
 `starts_at`, `ends_at`, `occupied_from`, `occupied_until`, `employee_id`,
 `employee_unit_id` and resource assignments (`resource_id`, `unit_ids`). One feasible
 assignment is returned per start. Narrow the date range when truncated; there is no
 cursor or promise of every alternative allocation. Internal unit IDs are not exposed
 to public/customer roles. Responses remain private and uncached.
 
-This endpoint checks simultaneous configuration feasibility but does not reserve a
-slot or account for persisted appointments. Booking persistence is the next milestone.
+This endpoint checks simultaneous configuration feasibility and persisted allocations.
+The result is a snapshot, not a hold; booking revalidates inside the transaction.
+
+## Phase 5 booking API
+
+Verified owners/managers can use `/api/v1/workspaces/{workspace_id}/bookings`:
+
+- `GET`: list snapshots with `offset` and `limit` (default 50, maximum 100), sorted by
+  appointment start and UUID, including cancelled bookings.
+- `POST`: create using `service_id`, `location_id`, timezone-aware `starts_at`,
+  `duration_minutes`, optional `employee_id`, and `customer_name` (1–100 characters).
+- `POST /{id}/reschedule`: same body plus current `version`; replaces allocations
+  atomically. The old slot remains intact if any validation or persistence step fails.
+- `POST /{id}/cancel`: body `{ "version": 1 }`; releases all active allocations.
+
+All writes require CSRF and a UUID `Idempotency-Key` header. Keys are scoped to actor
+and workspace across all booking actions. Matching retries return the original receipt
+(create returns 201); different commands using the same key return 409. Receipts contain
+booking ID/version/status, service/location/customer name, service name/price/currency,
+and the allocated slot. Replayed receipts represent the original operation, not current
+status; use the listing to refresh current state.
+
+Unavailable slots, stale versions, cancellation-window violations and idempotency
+conflicts return 409. Malformed dates/durations return 422; nonexistent or off-grid
+requested instants have no feasible slot (409). Missing tenant-scoped IDs return 404.
+Lock waits are bounded to five seconds; lock/deadlock/serialization errors roll back
+and return 503 `booking_busy`. Retry with the same key. No automatic retry is performed.
+Cancellation policy and cutoff also apply to rescheduling and to managers/owners.
+The API does not send notifications or expose public/customer booking operations yet.

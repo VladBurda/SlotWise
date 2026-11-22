@@ -1,10 +1,10 @@
 # SlotWise progress
 
-Updated: 2026-11-21 (Europe/Berlin).
+Updated: 2026-11-22 (Europe/Berlin).
 
 ## Current status
 
-**Phases 1–4 are complete and pushed. Phase 5 availability milestone is implemented.**
+**Phases 1–4 are complete and pushed. Phase 5 booking backend is implemented.**
 Phase 5 remains in progress; new commits stay local pending agreement to push.
 Phase 2 was authorized by the continuation request after closing the Phase 1 Docker gap.
 
@@ -297,3 +297,40 @@ were not repeated for this backend-only milestone. See final verification below.
 - Backend image build, migration startup and readiness: passed in the isolated project.
 - No frontend changes, schema changes, public deployment or remote push in this milestone.
 - Temporary Compose services stopped after checks, preserving their volumes.
+
+## Phase 5 — transactional booking milestone (2026-11-22)
+
+Availability milestone committed locally as `915d2cb`. Added owner/manager booking
+creation, paginated listing, cancellation and rescheduling. Availability now reads
+committed allocations. Create and reschedule recompute the exact requested instant
+under the workspace guard; client-supplied allocation IDs are never trusted.
+
+Migration 0005 adds appointments, active capacity allocations, idempotent receipts and
+durable booking history/outbox events. PostgreSQL GiST exclusion rejects overlapping
+buffered ranges per capacity unit, including writes bypassing the application guard.
+Appointments, allocations, audit, history and retry receipts commit atomically.
+Failed reschedules preserve the original booking; cancellation deletes active
+allocations while preserving receipts/history. Snapshots retain service name and price.
+
+Current boundaries: internal owner/manager API only; customer identity/ownership and
+public flows remain later work. Cancellation rules apply to internal users too, without
+an override. Existing catalog/profile updates are conservatively blocked while any
+upcoming workspace allocations exist; location edits are guarded by location. Creating
+new catalog items remains allowed. More precise conflict resolution is future work.
+Outbox events are durable but have no notification dispatcher yet. Lock timeout,
+deadlock and serialization failures return retryable 503 with the same idempotency key;
+there is no automatic server-side retry loop. Booking UI and its full-stack checks
+remain before Phase 5 can be considered complete. No push is authorized for these changes.
+
+### Booking backend verification
+
+- **100 backend tests passed** against PostgreSQL/Redis, including 12 new booking cases.
+- Concurrent tests cover exclusive capacity, capacity C with C+1 contenders, duplicate
+  idempotent requests, cancellation versus rescheduling, and configuration versus booking.
+- Direct SQL tests verify exclusion and tenant foreign keys independently of API locking.
+- Ruff lint/format and strict mypy passed (48 application source files).
+- Fresh migration upgrade, `alembic check`, downgrade to base and re-upgrade passed.
+- Runtime build/readiness passed. Temporary database removed and verification services
+  stopped, retaining normal volumes. Frontend was unchanged and its checks were not rerun.
+- Final tests emitted upstream TestClient deprecation and Pydantic field-alias warnings.
+  Initial verification caught a stale migration-head assertion; it now expects 0005.

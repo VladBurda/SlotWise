@@ -172,3 +172,25 @@ No destructive catalog delete exists. Audit records hold identifiers and actions
 Migration 0004 is a fixed SQL snapshot independent of mutable ORM metadata. The future
 allocation table should reference `(workspace_id, capacity_unit_id)` for both staff
 and assets; no allocation/exclusion or reservation behavior is claimed in Phase 4.
+
+## Phase 5 booking persistence (migration 0005)
+
+- `appointments`: tenant-scoped service/location foreign keys, creator, customer display
+  name, confirmed/cancelled state, optimistic version, UTC start/end and immutable-per-
+  version service/price/allocation receipt snapshot. No public customer ownership yet.
+- `allocations`: current blocking capacity only, with composite tenant foreign keys to
+  appointments and units. `allocations_no_overlap` excludes equal units with overlapping
+  half-open `tstzrange` intervals, including buffers. Cancel removes these rows;
+  reschedule replaces them transactionally. History remains in booking events.
+- `booking_requests`: workspace/actor/UUID-key primary key, canonical command digest
+  and original JSON receipt. Matching retries replay even after cancellation; key reuse
+  for another command conflicts. No expiry/cleanup policy has been implemented.
+- `booking_events`: durable versioned history and future outbox input, unique per
+  appointment/version. Dispatch/leases/retention belong to the notification milestone.
+
+Migration 0005 is fixed DDL. It installs `btree_gist` in `public` and uses the qualified
+UUID GiST operator class, keeping isolated test schemas independent of public tables.
+The migration user needs permission to install this trusted extension. Downgrade drops
+only the four booking tables, retaining the shared extension. Database exclusion is
+tested independently of HTTP locking; all application scheduling writes share the
+workspace guard. Cancellation/rescheduling preserve tenant boundaries and history.

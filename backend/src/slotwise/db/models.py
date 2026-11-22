@@ -16,9 +16,14 @@ from slotwise.catalog.models import (
     ServiceRequirement,
 )
 from slotwise.notifications.models import AuthMail
+from slotwise.scheduling.models import Allocation, Appointment, BookingEvent, BookingRequest
 from slotwise.tenants.models import AuditLog, Invitation, Membership, Workspace
 
 __all__ = [
+    "Allocation",
+    "Appointment",
+    "BookingEvent",
+    "BookingRequest",
     "CapacityUnit",
     "CatalogItem",
     "CatalogLink",

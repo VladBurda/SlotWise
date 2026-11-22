@@ -45,7 +45,7 @@ def test_availability_snapshot_and_scope(harness: Harness, monkeypatch: pytest.M
     response = owner.get(url, params=params)
     assert response.status_code == 200, response.text
     result = response.json()
-    assert result["reservation_aware"] is False
+    assert result["reservation_aware"] is True
     assert not result["truncated"] and not result["warnings"]
     assert len(result["slots"]) == 22
     first = result["slots"][0]

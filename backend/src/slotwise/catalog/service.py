@@ -151,6 +151,10 @@ class CatalogService(BusinessService):
             raise DomainError(422, "wrong_kind", "The form does not match this collection.")
         row = await self.item(workspace_id, kind, item_id) if item_id else None
         self.check_version(row.version if row else 0, data.version)
+        if row is not None:
+            from slotwise.scheduling.guards import protect_bookings
+
+            await protect_bookings(self.db, workspace_id)
         refs: list[tuple[UUID, str, date | None]] = []
         locations: list[UUID] = []
         if isinstance(data, (StaffInput, ResourceInput, PoolInput)):

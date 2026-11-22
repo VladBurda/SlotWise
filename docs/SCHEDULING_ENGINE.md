@@ -1,8 +1,8 @@
 # Scheduling engine and concurrency design
 
 Booking-engine design specification. Phase 5 now implements configuration-based
-feasibility; transactional booking and concurrency protection remain planned.
-No production booking correctness or performance claim is made.
+feasibility and transactional booking with PostgreSQL exclusion protection.
+The UI and broader lifecycle remain planned; no production performance claim is made.
 
 ## Domain contracts
 
@@ -183,7 +183,8 @@ appointment's local date, then atomically reserve stable capacity units.
 returns one deterministic assignment per start. Unit and asset UUIDs provide stable
 tie-breaking. Inputs include typed configuration, active capacity units and explicit
 occupied UTC intervals. Half-open occupancy overlap excludes a unit; adjacency is valid.
-The HTTP adapter currently supplies no occupancy because bookings are not implemented.
+The HTTP adapter loads overlapping persisted allocations, excluding the appointment
+being rescheduled only during its guarded replacement transaction.
 
 Candidates follow a local-midnight grid and are sorted in UTC. Both fall-back folds
 are retained; nonexistent spring-forward starts are skipped. Durations are elapsed UTC
@@ -208,3 +209,20 @@ The adapter copies configuration under the workspace guard shared by configurati
 writers, then releases the transaction before computation. The snapshot can become
 stale immediately afterward. Future booking transactions must reload occupancy and
 revalidate all constraints before atomically inserting exclusion-protected allocations.
+
+## Implemented booking transaction (2026-11-22)
+
+The booking service implements guarded snapshot/revalidation and allocation writes,
+idempotent receipt replay, versioned cancellation/rescheduling and durable event history.
+An exact-start search retains grid/policy checks without truncating a late-day selection.
+Unit locks are acquired in UUID order under the workspace guard. The exclusion
+constraint is a second line of protection against overlapping direct database writes.
+All application configuration writers share the guard. For this milestone, existing
+catalog/profile edits are conservatively blocked while the workspace has future or
+in-progress allocations; location edits check that location. New items are allowed.
+This intentionally rejects some harmless edits until precise resolution is implemented.
+
+The proposed automatic deadlock/serialization retry policy above is not implemented:
+the current service rolls back and returns 503 after these errors or a five-second
+lock timeout. Clients may retry the same command/key safely. There is no worker delivery,
+public ownership flow, checked-in/completed/no-show transition, or waitlist claim yet.

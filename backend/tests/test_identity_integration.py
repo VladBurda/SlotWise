@@ -120,6 +120,9 @@ def harness() -> Iterator[Harness]:
 
     async def setup() -> None:
         async with admin.begin() as connection:
+            await connection.execute(
+                text("CREATE EXTENSION IF NOT EXISTS btree_gist WITH SCHEMA public")
+            )
             await connection.execute(text(f'CREATE SCHEMA "{schema}"'))
         async with engine.begin() as connection:
             await connection.run_sync(Base.metadata.create_all)
