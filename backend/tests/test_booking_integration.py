@@ -316,3 +316,39 @@ def test_booking_roles(harness: Harness, role: str, status: int) -> None:
     )
     result = send(other, wid, data)
     assert result.status_code == status, result.text
+
+
+def test_calendar_range_filters_history_and_isolation(harness: Harness) -> None:
+    owner, wid, data, _ = configured(harness)
+    first = send(owner, wid, data).json()
+    second = send(owner, wid, {**data, "starts_at": "2026-11-23T09:00:00Z"}).json()
+    assert send(owner, wid, {"version": 1}, suffix=f"/{first['id']}/cancel").status_code == 200
+    url = f"/api/v1/workspaces/{wid}/bookings"
+    params = {
+        "after": "2026-11-23T08:15:00Z",
+        "before": "2026-11-23T09:00:00Z",
+        "location_id": data["location_id"],
+        "employee_id": first["slot"]["employee_id"],
+        "resource_id": first["slot"]["resources"][0]["resource_id"],
+        "status": "cancelled",
+    }
+    response = owner.get(url, params=params)
+    assert response.status_code == 200, response.text
+    assert [b["id"] for b in response.json()] == [first["id"]]
+    assert owner.get(url, params={**params, "after": "2026-11-23T08:30:00Z"}).json() == []
+    assert owner.get(url, params={**params, "resource_id": str(uuid4())}).json() == []
+    params = {
+        "after": "2026-11-23T09:00:00Z",
+        "before": "2026-11-23T09:30:00Z",
+        "status": "confirmed",
+    }
+    assert owner.get(url, params=params).json()[0]["id"] == second["id"]
+    stranger = harness.account("calendar-stranger@example.com")
+    assert stranger.get(url, params=params).status_code == 404
+    for invalid in [
+        {"after": "2026-11-23T00:00:00Z"},
+        {"after": "2026-11-23T00:00:00", "before": "2026-11-24T00:00:00Z"},
+        {"after": "2026-11-23T00:00:00Z", "before": "2027-11-24T00:00:00Z"},
+        {"after": "2026-11-23T00:00:00Z", "before": "2026-11-22T00:00:00Z"},
+    ]:
+        assert owner.get(url, params=invalid).status_code == 422

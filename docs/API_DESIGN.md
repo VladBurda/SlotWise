@@ -215,3 +215,17 @@ allocations are excluded only from this preview; reservations are never released
 a read. Booking writes ignore preview output and independently revalidate the move.
 The management UI retains a command/key while retrying uncertain responses in the open
 editor. It clears stale slot selection on definitive rejection and refreshes availability.
+
+## Phase 6 calendar queries
+
+`GET .../bookings` also accepts optional `after` and `before` timezone-aware instants.
+Both must be supplied together, ordered, with a span no greater than 93 days; invalid
+ranges return 422. Overlap is `appointment.end > after AND appointment.start < before`,
+so appointments crossing a boundary are included and exact end adjacency is excluded.
+These are service times, not buffer occupancy. Existing offset/limit pagination applies.
+
+Optional `location_id`, `employee_id`, `resource_id` and `status` (confirmed/cancelled)
+filters combine with the workspace restriction. Omitted status includes both states.
+Employee/resource matching uses persisted booking snapshots, including cancelled
+history. Unknown/nonmatching filter IDs return an empty list, without looking up or
+disclosing entities from other workspaces. Owner/manager access remains required.

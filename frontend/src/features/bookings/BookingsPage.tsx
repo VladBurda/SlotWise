@@ -3,22 +3,10 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { api, errorMessage, type Workspace } from '@/features/account/api';
-import { locationSchema } from '@/features/business/contracts';
-import { itemSchema } from '@/features/catalog/contracts';
+import { loadBookingConfig } from './data';
 import { BookingEditor } from './BookingEditor';
 import { bookingSchema, slotLabel, type Booking } from './contracts';
 import { useBookingAction } from './useBookingAction';
-
-async function pages<T>(path: string, schema: z.ZodType<T>): Promise<T[]> {
-  const result: T[] = [];
-  for (let offset = 0; ; offset += 100) {
-    const page = z
-      .array(schema)
-      .parse(await api(`${path}?offset=${offset}&limit=100`));
-    result.push(...page);
-    if (page.length < 100) return result;
-  }
-}
 
 function CancelBooking({
   booking,
@@ -78,15 +66,7 @@ export function BookingsPage({ workspace }: { workspace: Workspace }) {
   const [notice, setNotice] = useState('');
   const config = useQuery({
     queryKey: ['booking-config', workspace.id],
-    queryFn: async () => {
-      const [locations, ...groups] = await Promise.all([
-        pages(`${root}/locations`, locationSchema),
-        ...(['services', 'staff', 'resources'] as const).map((kind) =>
-          pages(`${root}/catalog/${kind}`, itemSchema),
-        ),
-      ]);
-      return { locations, items: groups.flat() };
-    },
+    queryFn: () => loadBookingConfig(workspace.id),
   });
   const bookings = useQuery({
     queryKey: ['bookings', workspace.id, offset],
@@ -104,6 +84,7 @@ export function BookingsPage({ workspace }: { workspace: Workspace }) {
         : `Appointment confirmed for ${booking.customer_name}.`,
     );
     void cache.invalidateQueries({ queryKey: ['bookings', workspace.id] });
+    void cache.invalidateQueries({ queryKey: ['calendar', workspace.id] });
     void cache.invalidateQueries({ queryKey: ['availability', workspace.id] });
   };
   return (

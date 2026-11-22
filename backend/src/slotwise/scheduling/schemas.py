@@ -1,8 +1,8 @@
-from datetime import UTC, date, datetime
-from typing import Literal
+from datetime import UTC, date, datetime, timedelta
+from typing import Literal, Self
 from uuid import UUID
 
-from pydantic import AwareDatetime, Field, field_validator
+from pydantic import AwareDatetime, Field, field_validator, model_validator
 
 from slotwise.business.schemas import Input
 
@@ -86,3 +86,25 @@ class BookingView(Input):
     service_name: str
     price_minor: int
     currency: str
+
+
+class BookingListQuery(Input):
+    offset: int = Field(default=0, ge=0)
+    limit: int = Field(default=50, ge=1, le=100)
+    after: AwareDatetime | None = None
+    before: AwareDatetime | None = None
+    location_id: UUID | None = None
+    employee_id: UUID | None = None
+    resource_id: UUID | None = None
+    status: Literal["confirmed", "cancelled"] | None = None
+
+    @model_validator(mode="after")
+    def valid_range(self) -> Self:
+        if (self.after is None) != (self.before is None):
+            raise ValueError("Supply both range boundaries")
+        if self.after is not None and self.before is not None:
+            self.after = self.after.astimezone(UTC)
+            self.before = self.before.astimezone(UTC)
+            if not timedelta(0) < self.before - self.after <= timedelta(days=93):
+                raise ValueError("The range must be positive and at most 93 days")
+        return self

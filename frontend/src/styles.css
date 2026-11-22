@@ -1152,6 +1152,117 @@ footer span:last-child {
   }
 }
 /* Scheduling configuration */
+.calendar-controls {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+.calendar-controls label {
+  display: grid;
+  gap: 0.5rem;
+}
+.calendar-controls select,
+.calendar-controls input {
+  min-width: 0;
+  width: 100%;
+  padding: 0.65rem;
+  border: 1px solid #cbd8d1;
+  border-radius: 8px;
+  background: white;
+}
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+.calendar-day {
+  min-width: 0;
+  border: 1px solid #dce4df;
+  border-radius: 10px;
+  padding: 0.65rem;
+}
+.calendar-day.today {
+  border-color: #216c58;
+  background: #f3faf6;
+}
+.calendar-day h3 {
+  font-size: 0.85rem;
+  margin: 0 0 0.75rem;
+}
+.calendar-empty {
+  color: #63756c;
+  font-size: 0.8rem;
+}
+.calendar-appointment {
+  display: grid;
+  gap: 0.35rem;
+  text-align: left;
+  width: 100%;
+  border: 1px solid #b7d6c6;
+  background: #edf7f1;
+  color: #25473a;
+  border-radius: 8px;
+  padding: 0.65rem;
+  margin: 0.4rem 0;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+  font-size: 0.8rem;
+}
+.calendar-appointment:hover,
+.calendar-appointment[aria-pressed='true'] {
+  outline: 2px solid #216c58;
+}
+.calendar-appointment.cancelled {
+  background: #f3f3f3;
+  border-color: #d5d5d5;
+  color: #555;
+}
+.calendar-day .calendar-appointment span {
+  display: block;
+}
+.calendar-day.today h3 {
+  color: #216c58;
+}
+.calendar-day,
+.calendar-appointment {
+  align-self: start;
+}
+.calendar-day-view,
+.calendar-agenda,
+.calendar-day {
+  min-width: 0;
+}
+.calendar-grid.calendar-day,
+.calendar-agenda {
+  grid-template-columns: 1fr;
+}
+.calendar-details {
+  margin: auto;
+  max-width: 600px;
+  width: 90vw;
+  border: 1px solid #cbd8d1;
+  border-radius: 16px;
+  padding: 2rem;
+  color: #25473a;
+}
+.calendar-details::backdrop {
+  background: #152e2580;
+}
+.calendar-details p {
+  margin: 1rem 0;
+  overflow-wrap: anywhere;
+}
+.calendar-caption {
+  color: #52675b;
+  margin-top: 1rem;
+}
+@media (max-width: 900px) {
+  .calendar-grid {
+    grid-template-columns: 1fr;
+  }
+}
 .booking-page {
   display: grid;
   gap: 1.25rem;

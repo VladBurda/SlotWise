@@ -28,12 +28,16 @@ const BookingsPage = lazy(() =>
   })),
 );
 
+const CalendarPage = lazy(() =>
+  import('@/features/calendar/CalendarPage').then((module) => ({
+    default: module.CalendarPage,
+  })),
+);
+
 function VerifiedWorkspace({ user }: { user: User }) {
   const [search, setSearch] = useSearchParams();
   const [creating, setCreating] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
-  const [catalogOpen, setCatalogOpen] = useState(false);
-  const [bookingsOpen, setBookingsOpen] = useState(false);
+  const [section, setSection] = useState('team');
   const cache = useQueryClient();
   const workspaces = useQuery({
     queryKey: ['workspaces', user.id],
@@ -112,59 +116,35 @@ function VerifiedWorkspace({ user }: { user: User }) {
       {['owner', 'manager'].includes(selected.role) ? (
         <>
           <nav className="form-actions" aria-label="Workspace sections">
-            <Button
-              variant={
-                settingsOpen || catalogOpen || bookingsOpen
-                  ? 'outline'
-                  : 'default'
-              }
-              onClick={() => {
-                setSettingsOpen(false);
-                setBookingsOpen(false);
-                setCatalogOpen(false);
-              }}
-            >
-              Team
-            </Button>
-            <Button
-              variant={
-                settingsOpen && !catalogOpen && !bookingsOpen
-                  ? 'default'
-                  : 'outline'
-              }
-              onClick={() => {
-                setSettingsOpen(true);
-                setBookingsOpen(false);
-                setCatalogOpen(false);
-              }}
-            >
-              Business settings
-            </Button>
-            <Button
-              variant={catalogOpen && !bookingsOpen ? 'default' : 'outline'}
-              onClick={() => {
-                setCatalogOpen(true);
-                setBookingsOpen(false);
-              }}
-            >
-              Scheduling setup
-            </Button>
-            <Button
-              variant={bookingsOpen ? 'default' : 'outline'}
-              onClick={() => setBookingsOpen(true)}
-            >
-              Appointments
-            </Button>
+            {Object.entries({
+              team: 'Team',
+              settings: 'Business settings',
+              catalog: 'Scheduling setup',
+              bookings: 'Appointments',
+              calendar: 'Calendar',
+            }).map(([key, label]) => (
+              <Button
+                key={key}
+                variant={section === key ? 'default' : 'outline'}
+                onClick={() => setSection(key)}
+              >
+                {label}
+              </Button>
+            ))}
           </nav>
-          {bookingsOpen ? (
+          {section === 'calendar' ? (
+            <Suspense fallback={<p role="status">Loading calendar…</p>}>
+              <CalendarPage key={selected.id} workspace={selected} />
+            </Suspense>
+          ) : section === 'bookings' ? (
             <Suspense fallback={<p role="status">Loading appointments…</p>}>
               <BookingsPage key={selected.id} workspace={selected} />
             </Suspense>
-          ) : catalogOpen ? (
+          ) : section === 'catalog' ? (
             <Suspense fallback={<p role="status">Loading scheduling setup…</p>}>
               <CatalogPage key={selected.id} workspace={selected} />
             </Suspense>
-          ) : settingsOpen ? (
+          ) : section === 'settings' ? (
             <BusinessSettings key={selected.id} workspace={selected} />
           ) : (
             <TeamPanel key={selected.id} workspace={selected} />

@@ -10,6 +10,7 @@ from slotwise.scheduling.models import Appointment
 from slotwise.scheduling.schemas import (
     AvailabilityQuery,
     AvailabilityResult,
+    BookingListQuery,
     BookingView,
     BookInput,
     CancelInput,
@@ -83,16 +84,32 @@ async def bookings(
     request: Request,
     db: Db,
     current: Current,
-    offset: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=100),
+    query: Annotated[BookingListQuery, Query()],
 ) -> list[BookingView]:
     service = BookingService(db, request.app.state.settings, current)
     await service.access(workspace_id, {"owner", "manager"})
+    statement = select(Appointment).where(Appointment.workspace_id == workspace_id)
+    if query.after is not None and query.before is not None:
+        statement = statement.where(
+            Appointment.ends_at > query.after, Appointment.starts_at < query.before
+        )
+    if query.location_id is not None:
+        statement = statement.where(Appointment.location_id == query.location_id)
+    if query.status is not None:
+        statement = statement.where(Appointment.status == query.status)
+    if query.employee_id is not None:
+        statement = statement.where(
+            Appointment.details["slot"]["employee_id"].astext == str(query.employee_id)
+        )
+    if query.resource_id is not None:
+        statement = statement.where(
+            Appointment.details.contains(
+                {"slot": {"resources": [{"resource_id": str(query.resource_id)}]}}
+            )
+        )
     rows = await db.scalars(
-        select(Appointment)
-        .where(Appointment.workspace_id == workspace_id)
-        .order_by(Appointment.starts_at, Appointment.id)
-        .offset(offset)
-        .limit(limit)
+        statement.order_by(Appointment.starts_at, Appointment.id)
+        .offset(query.offset)
+        .limit(query.limit)
     )
     return [service.booking_view(row) for row in rows]

@@ -5,7 +5,7 @@ but still have explicit blocked verification; never treat a skipped gate as a pa
 
 Current status (2026-11-22): **Phases 1–5 complete and verified** within the documented
 internal booking scope. Availability and backend commits are pushed after agreement;
-the booking UI commit remains local. **Phase 6 calendar views are next.** See
+the booking UI commit remains local. **Phase 6 calendar views are in progress.** See
 `PROGRESS.md` for the acceptance evidence and remaining operational limitations.
 
 | Phase | Deliverable | Required gate |
@@ -97,3 +97,11 @@ Completed on 2026-11-21; see `PROGRESS.md` for results and architecture refineme
 - Phase 6 calendar views are next; Phase 5 retains the documented conservative config
   guard and internal owner/manager scope. Notification dispatch belongs to Phase 8.
 - New commits remain local pending agreement to push.
+
+## Phase 6 milestones
+
+- Implemented: read-only day/week/month/agenda views, local timezone labels, overnight
+  grouping, location/staff/resource/status filters, details dialog and bounded range API.
+- Next: staff/resource timelines and transactional drag/resize interactions.
+- Then: authenticated realtime delivery, workspace isolation and reconnect consistency.
+- Phase 6 remains incomplete until those behaviors and their verification are delivered.

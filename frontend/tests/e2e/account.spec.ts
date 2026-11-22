@@ -305,6 +305,51 @@ test('configure staff, assets and services with qualified matches', async ({
       path: `../docs/screenshots/bookings-${isMobile ? 'mobile' : 'desktop'}.png`,
       fullPage: true,
     });
+  await page.getByRole('button', { name: 'Calendar', exact: true }).click();
+  await page
+    .getByLabel('Calendar date')
+    .fill(monday.toISOString().slice(0, 10));
+  await expect(page.getByText(/0 appointments/)).toBeVisible();
+  await page
+    .getByRole('combobox', { name: 'Appointment status', exact: true })
+    .selectOption('cancelled');
+  await page
+    .getByRole('combobox', { name: 'Calendar location', exact: true })
+    .selectOption({ label: 'Main workshop' });
+  await page
+    .getByRole('combobox', { name: 'Calendar staff', exact: true })
+    .selectOption({ label: 'Alex Morgan' });
+  await page
+    .getByRole('combobox', { name: 'Calendar resource', exact: true })
+    .selectOption({ label: 'Diagnostic room' });
+  await expect(page.getByText(/1 appointments/)).toBeVisible();
+  await page
+    .getByRole('button', { name: /Jamie Taylor Vehicle diagnostics/ })
+    .click();
+  await expect(
+    page.getByRole('dialog', { name: 'Appointment details' }),
+  ).toContainText('Alex Morgan');
+  await page.getByRole('button', { name: 'Close details' }).click();
+  if (process.env.SLOTWISE_CALENDAR_CAPTURE === '1')
+    await page.screenshot({
+      path: `../docs/screenshots/calendar-week-${isMobile ? 'mobile' : 'desktop'}.png`,
+      fullPage: true,
+    });
+  for (const view of ['day', 'month', 'agenda']) {
+    await page
+      .getByRole('combobox', { name: 'Calendar view', exact: true })
+      .selectOption(view);
+    await expect(page.getByText(/1 appointments/)).toBeVisible();
+  }
+  await page.getByRole('button', { name: 'Next period' }).click();
+  await expect(page.getByText(/0 appointments/)).toBeVisible();
+  await page.getByRole('button', { name: 'Previous period' }).click();
+  await expect(page.getByText(/1 appointments/)).toBeVisible();
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBe(true);
 });
 
 test.describe('account lifecycle against PostgreSQL and Mailpit', () => {

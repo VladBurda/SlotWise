@@ -266,3 +266,13 @@ Times use the selected location's IANA zone with numeric offsets to distinguish 
 folds. Rescheduling previews may exclude their own tenant-scoped active appointment,
 while transactional revalidation remains unchanged. Desktop/mobile browser tests use
 real PostgreSQL, Redis and Mailpit and cover the full booking lifecycle.
+
+Phase 6 introduces a separate lazy-loaded, read-only Calendar section. It shares
+booking configuration queries and uses workspace/range/filter-scoped cache keys. The
+API filters service-time overlap and snapshot assignments; the browser groups results
+by IANA-zone civil dates. Civil arithmetic uses UTC noon to avoid browser-zone DST
+normalization. A padded UTC query envelope includes all possible offsets; exact local
+grouping removes the padding from display. Large result sets stop with an explicit
+error at 5,000 records. This is not a realtime or snapshot-consistent paginated feed;
+users can refresh after concurrent changes. Timelines, drag/resize and realtime remain
+separate Phase 6 milestones.

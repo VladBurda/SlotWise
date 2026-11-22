@@ -6,7 +6,7 @@ Updated: 2026-11-22 (Europe/Berlin).
 
 **Phases 1–5 are complete and verified within the documented boundaries.**
 Availability/backend commits through `5ffdebc` are pushed. The booking UI commit stays
-local pending agreement to push. Phase 6 calendar views are next.
+local pending agreement to push. Phase 6 calendar views are in progress.
 Phase 2 was authorized by the continuation request after closing the Phase 1 Docker gap.
 
 ## Phase 1 retained
@@ -364,3 +364,33 @@ overflow. Desktop/mobile editor and history screenshots were retained and review
 TypeScript, ESLint, Prettier, Ruff and mypy passed; production Compose images built
 and all runtime services became healthy. No database migration was needed for this UI
 milestone. Phase 6 has not been started.
+
+## Phase 6 — calendar views milestone (2026-11-22)
+
+After the next continuation, committed the verified Phase 5 UI locally as `4911524`
+and started Phase 6. Added day/week/month/agenda calendar views, date navigation,
+location/staff/resource/status filters, manual refresh and an accessible native details
+dialog. Desktop week/month layouts use seven columns; mobile uses stacked day sections.
+Time labels include UTC offsets. All-location views use the workspace timezone; a
+selected location uses its timezone. Overnight bookings appear on each occupied civil
+date, with midnight end treated exclusively. Configuration loading is shared with the
+booking UI; workspace navigation now uses one section state.
+
+Booking list queries support a timezone-aware overlap range of at most 93 days plus
+tenant-scoped filters. Staff/resource filtering reads booking snapshots, so cancelled
+history remains filterable after active allocations are removed. Calendar requests use
+a padded UTC envelope, followed by exact local-date grouping. Paginated loading fails
+explicitly at 5,000 records instead of silently displaying partial availability.
+
+This milestone is read-only. Staff/resource timelines, drag/resize interactions and
+authenticated realtime updates/reconnect handling remain outstanding Phase 6 work.
+No additional push is authorized; UI/calendar commits remain local.
+
+Calendar milestone verification: **101 backend tests**, **30 frontend tests**, and
+**12 full-stack desktop/mobile browser checks** passed. API tests cover overlap edges,
+history filters after cancellation, tenant access and invalid ranges. Frontend tests
+cover DST-week arithmetic, leap days, overnight/exclusive-midnight grouping and scoped
+query filters. Browser checks exercise all four calendar views, assignment/status
+filters, details dialog and date navigation with real persisted bookings. Desktop/mobile
+screenshots were reviewed and retained. Production build/readiness, TypeScript, ESLint,
+Prettier, Ruff and strict mypy passed. No migration or dependency was added.
