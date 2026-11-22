@@ -19,6 +19,7 @@ from slotwise.core.config import Settings, get_settings
 from slotwise.core.errors import DomainError
 from slotwise.core.logging import configure_logging
 from slotwise.notifications.mail import mail_loop
+from slotwise.scheduling.routes import router as scheduling_router
 from slotwise.tenants.routes import router as tenant_router
 
 
@@ -68,6 +69,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         redoc_url=None,
         openapi_url="/api/openapi.json" if config.environment != "production" else None,
     )
+    app.include_router(scheduling_router, prefix="/api/v1")
     app.add_middleware(
         CORSMiddleware,
         allow_origins=config.cors_origins,

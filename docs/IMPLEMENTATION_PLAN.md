@@ -4,8 +4,8 @@ Work stops at every phase boundary for user approval. A phase can be implemented
 but still have explicit blocked verification; never treat a skipped gate as a pass.
 
 Current status (2026-11-21): **Phases 1–4 complete and verified**. Phase 4 was
-explicitly authorized by the user. **Phase 5 awaits approval.** The Phase 4 commit
-remains local until the user agrees to push. See
+explicitly authorized by the user and pushed after agreement. **Phase 5 is in progress:**
+the first milestone adds configuration-based availability; atomic booking is next. See
 `PROGRESS.md` for the acceptance evidence and remaining operational limitations.
 
 | Phase | Deliverable | Required gate |
@@ -85,3 +85,12 @@ Completed on 2026-11-21; see `PROGRESS.md` for results and architecture refineme
 - Full regression suite: 73 backend, 23 frontend and 12 desktop/mobile browser tests.
 - Production build, lint/types, migration consistency, health and SMTP checks passed.
 - Stop before Phase 5 and wait for agreement before pushing the local Phase 4 commit.
+
+## Phase 5 milestones
+
+- Implemented: deterministic availability engine and owner/manager API, joint resource
+  allocation, hours/buffers/qualifications/policies, timezone and capacity tests.
+- Next: appointment/allocation migrations, PostgreSQL exclusion constraints, transactional
+  revalidation, idempotency, cancellation/rescheduling and synchronized race tests.
+- Then: booking UI and full-stack verification. Phase 5 remains incomplete until these pass.
+- New commits remain local pending agreement to push.

@@ -1,8 +1,8 @@
 # Scheduling engine and concurrency design
 
-Booking-engine design specification; implementation starts in Phase 5. Phase 3
-implements civil operating-time expansion and its DST tests, not booking feasibility.
-No booking correctness or performance claim is made.
+Booking-engine design specification. Phase 5 now implements configuration-based
+feasibility; transactional booking and concurrency protection remain planned.
+No production booking correctness or performance claim is made.
 
 ## Domain contracts
 
@@ -176,3 +176,35 @@ account-to-profile linking are not part of this phase. Availability is configura
 not appointment slots. The future booking transaction must resolve resource combinations,
 intersect all windows, validate duration/buffers/notice/horizon and qualifications at the
 appointment's local date, then atomically reserve stable capacity units.
+
+## Phase 5 implemented availability contract
+
+`scheduling.engine.feasible_slots(Snapshot, AvailabilityQuery, now)` is pure and
+returns one deterministic assignment per start. Unit and asset UUIDs provide stable
+tie-breaking. Inputs include typed configuration, active capacity units and explicit
+occupied UTC intervals. Half-open occupancy overlap excludes a unit; adjacency is valid.
+The HTTP adapter currently supplies no occupancy because bookings are not implemented.
+
+Candidates follow a local-midnight grid and are sorted in UTC. Both fall-back folds
+are retained; nonexistent spring-forward starts are skipped. Durations are elapsed UTC
+minutes. Adjacent operating intervals merge across midnight. A nonexistent recurring
+boundary closes that item/day with a warning. Qualifications must cover the final local
+service date, excluding the end instant and excluding buffers.
+
+Minimum notice inherits the business setting unless the service overrides it. Each
+buffer is the maximum of business and service settings (business settings are minima).
+The entire buffered interval must fit operating hours. Start must meet notice; service
+end must be within `now + booking_horizon_days` elapsed days. Buffer end may extend past
+that horizon if operating hours permit. Duration must fit the inclusive service range
+and its configured step.
+
+Requirements are solved together using bounded backtracking. Quantity means distinct
+assets within that requirement; separate requirements may share an asset only through
+different capacity units. The search counts candidate/assignment nodes with a 100,000
+budget and raises `SearchTooComplex` instead of returning misleading partial results.
+This is a work bound on combinatorial search, not a measured latency guarantee.
+
+The adapter copies configuration under the workspace guard shared by configuration
+writers, then releases the transaction before computation. The snapshot can become
+stale immediately afterward. Future booking transactions must reload occupancy and
+revalidate all constraints before atomically inserting exclusion-protected allocations.

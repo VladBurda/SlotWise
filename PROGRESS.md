@@ -4,8 +4,8 @@ Updated: 2026-11-21 (Europe/Berlin).
 
 ## Current status
 
-**Phases 1–4 are complete and verified. Phase 5 awaits approval.**
-Phase 4 is committed locally after verification; pushing requires the user's agreement.
+**Phases 1–4 are complete and pushed. Phase 5 availability milestone is implemented.**
+Phase 5 remains in progress; new commits stay local pending agreement to push.
 Phase 2 was authorized by the continuation request after closing the Phase 1 Docker gap.
 
 ## Phase 1 retained
@@ -266,3 +266,34 @@ Configuration matches do not prove simultaneous resource allocation or reserve a
 Phase 5 must enforce booking policies, buffers, existing reservations and capacity
 reductions against bookings in a transaction with database exclusion protection.
 No Phase 5 implementation, public deployment or push was performed.
+
+## Phase 5 — availability milestone (2026-11-21)
+
+The continuation request authorized Phase 5. Work is divided into bounded milestones
+following the user's request to reduce credit usage. Phase 4 commit `9fac2c1` was pushed
+after explicit agreement; the preceding section records its pre-push state.
+
+Delivered a pure deterministic engine and owner/manager availability endpoint. It
+intersects business/staff/resource hours, exceptions, breaks and UTC unavailability;
+checks skills through the final local service date, duration, notice, horizon and
+buffers; and jointly assigns distinct stable capacity units across requirements.
+Local-time grids handle DST gaps/folds and non-hour zones. Search limits fail explicitly;
+result limits report truncation only when another feasible slot exists.
+
+The engine accepts occupancy snapshots, but the API has no appointment storage yet and
+explicitly returns `reservation_aware: false`. Results never reserve capacity. Atomic
+bookings, PostgreSQL exclusion constraints, idempotency, cancellation/rescheduling,
+booking UI and race tests remain required before completing Phase 5. No schema change.
+
+Verification uses focused engine tests followed by the full backend suite in the isolated
+Compose project with real PostgreSQL/Redis. Frontend/browser checks are unchanged and
+were not repeated for this backend-only milestone. See final verification below.
+
+### Availability milestone verification
+
+- Full backend suite: **88 passed** (73 existing, 11 new engine cases, 4 new API cases)
+  against real PostgreSQL/Redis; one existing upstream TestClient deprecation warning.
+- Ruff lint/format and strict mypy: passed, 45 application source files.
+- Backend image build, migration startup and readiness: passed in the isolated project.
+- No frontend changes, schema changes, public deployment or remote push in this milestone.
+- Temporary Compose services stopped after checks, preserving their volumes.

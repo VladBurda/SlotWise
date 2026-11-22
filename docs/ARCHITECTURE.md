@@ -236,3 +236,14 @@ Large-workspace remote-search selectors are a future scalability improvement.
 
 Verification also aligned earlier ORM unique-constraint names with their immutable
 Phase 2/3 migrations; no existing database constraint or migration was changed.
+
+## Phase 5 availability milestone
+
+The scheduling package separates a pure snapshot-based search engine from the HTTP
+and SQLAlchemy adapter. The adapter reads tenant-scoped configuration and stable active
+units under the workspace guard, then commits the read transaction before calculating.
+Bounded backtracking allocates resources jointly; reusable calendar/eligibility functions
+enforce existing catalog semantics. The internal owner/manager API reports explicitly
+that appointment persistence is absent. Booking writes must revalidate under transaction
+locks and database exclusion constraints; an availability response cannot authorize a
+reservation. No UI or database schema change belongs to this first milestone.

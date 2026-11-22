@@ -161,3 +161,23 @@ Duration ranges include both endpoints and advance by duration_step_minutes. Pri
 integer minor units (JPY has no decimal minor subdivision); supported currencies are
 EUR, USD, GBP, CAD, AUD, CHF, JPY and UAH. Minimum notice may inherit the business policy
 (null) or override it. Policy enforcement, allocation and payment are not performed here.
+
+## Phase 5 availability milestone
+
+`GET /api/v1/workspaces/{workspace_id}/availability` requires a verified owner/manager.
+Query parameters: `service_id`, `location_id`, `start` (local date, years 1901–2099),
+`days` (1–7, default 1), optional `duration_minutes` and `employee_id`, and `limit`
+(1–500, default 100). Service duration defaults to its minimum. Unknown tenant-scoped
+IDs return 404; disallowed roles 403; invalid duration/location or search budget
+exhaustion 422 (`invalid_availability` or `search_too_complex`).
+
+The result contains `computed_at`, location `timezone`, UTC `slots`, `truncated`,
+`warnings`, `reservation_aware: false`, and a configuration-only notice. Each slot has
+`starts_at`, `ends_at`, `occupied_from`, `occupied_until`, `employee_id`,
+`employee_unit_id` and resource assignments (`resource_id`, `unit_ids`). One feasible
+assignment is returned per start. Narrow the date range when truncated; there is no
+cursor or promise of every alternative allocation. Internal unit IDs are not exposed
+to public/customer roles. Responses remain private and uncached.
+
+This endpoint checks simultaneous configuration feasibility but does not reserve a
+slot or account for persisted appointments. Booking persistence is the next milestone.
