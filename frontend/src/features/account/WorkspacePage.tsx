@@ -22,12 +22,18 @@ const CatalogPage = lazy(() =>
     default: module.CatalogPage,
   })),
 );
+const BookingsPage = lazy(() =>
+  import('@/features/bookings/BookingsPage').then((module) => ({
+    default: module.BookingsPage,
+  })),
+);
 
 function VerifiedWorkspace({ user }: { user: User }) {
   const [search, setSearch] = useSearchParams();
   const [creating, setCreating] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [catalogOpen, setCatalogOpen] = useState(false);
+  const [bookingsOpen, setBookingsOpen] = useState(false);
   const cache = useQueryClient();
   const workspaces = useQuery({
     queryKey: ['workspaces', user.id],
@@ -107,31 +113,54 @@ function VerifiedWorkspace({ user }: { user: User }) {
         <>
           <nav className="form-actions" aria-label="Workspace sections">
             <Button
-              variant={settingsOpen || catalogOpen ? 'outline' : 'default'}
+              variant={
+                settingsOpen || catalogOpen || bookingsOpen
+                  ? 'outline'
+                  : 'default'
+              }
               onClick={() => {
                 setSettingsOpen(false);
+                setBookingsOpen(false);
                 setCatalogOpen(false);
               }}
             >
               Team
             </Button>
             <Button
-              variant={settingsOpen && !catalogOpen ? 'default' : 'outline'}
+              variant={
+                settingsOpen && !catalogOpen && !bookingsOpen
+                  ? 'default'
+                  : 'outline'
+              }
               onClick={() => {
                 setSettingsOpen(true);
+                setBookingsOpen(false);
                 setCatalogOpen(false);
               }}
             >
               Business settings
             </Button>
             <Button
-              variant={catalogOpen ? 'default' : 'outline'}
-              onClick={() => setCatalogOpen(true)}
+              variant={catalogOpen && !bookingsOpen ? 'default' : 'outline'}
+              onClick={() => {
+                setCatalogOpen(true);
+                setBookingsOpen(false);
+              }}
             >
               Scheduling setup
             </Button>
+            <Button
+              variant={bookingsOpen ? 'default' : 'outline'}
+              onClick={() => setBookingsOpen(true)}
+            >
+              Appointments
+            </Button>
           </nav>
-          {catalogOpen ? (
+          {bookingsOpen ? (
+            <Suspense fallback={<p role="status">Loading appointments…</p>}>
+              <BookingsPage key={selected.id} workspace={selected} />
+            </Suspense>
+          ) : catalogOpen ? (
             <Suspense fallback={<p role="status">Loading scheduling setup…</p>}>
               <CatalogPage key={selected.id} workspace={selected} />
             </Suspense>

@@ -4,8 +4,9 @@ Updated: 2026-11-22 (Europe/Berlin).
 
 ## Current status
 
-**Phases 1–4 are complete and pushed. Phase 5 booking backend is implemented.**
-Phase 5 remains in progress; new commits stay local pending agreement to push.
+**Phases 1–5 are complete and verified within the documented boundaries.**
+Availability/backend commits through `5ffdebc` are pushed. The booking UI commit stays
+local pending agreement to push. Phase 6 calendar views are next.
 Phase 2 was authorized by the continuation request after closing the Phase 1 Docker gap.
 
 ## Phase 1 retained
@@ -334,3 +335,32 @@ remain before Phase 5 can be considered complete. No push is authorized for thes
   stopped, retaining normal volumes. Frontend was unchanged and its checks were not rerun.
 - Final tests emitted upstream TestClient deprecation and Pydantic field-alias warnings.
   Initial verification caught a stale migration-head assertion; it now expects 0005.
+
+## Phase 5 — booking UI and final verification (2026-11-22)
+
+Pushed `915d2cb` and `5ffdebc` to `origin/main` on explicit request. Added the lazy-loaded
+Appointments section for owners/managers: service/location/date/duration/staff search,
+offset-labelled local times, assigned staff/resources and price review, customer name,
+confirmation, paginated history, rescheduling and cancellation. Empty, loading, error,
+conflict and uncertain-response states are explicit. Search changes clear stale selections.
+
+The availability API accepts an optional tenant-scoped `exclude_booking_id` for
+reschedule previews; only a confirmed booking in the current workspace can be excluded.
+This permits overlapping moves without first releasing the original allocation.
+The booking write still revalidates independently under the guard.
+
+Uncertain responses freeze the command and retain its idempotency key for explicit
+retries while the editor remains open. Keys are not persisted across reload/navigation;
+the UI asks users to remain on the page. If they leave anyway, they must inspect current
+appointment history before starting another request. Public customer access, calendar
+views and notification delivery retain their planned later-phase boundaries.
+
+Final verification: **100 backend tests**, **27 frontend tests**, and **12 desktop/mobile
+Playwright checks** passed. Browser verification initially started before readiness;
+the seven passing checks were retained and the five affected checks rerun successfully
+after readiness and a dropdown selector correction. Browser coverage now includes
+booking persistence after reload, overlapping rescheduling, cancellation and mobile
+overflow. Desktop/mobile editor and history screenshots were retained and reviewed.
+TypeScript, ESLint, Prettier, Ruff and mypy passed; production Compose images built
+and all runtime services became healthy. No database migration was needed for this UI
+milestone. Phase 6 has not been started.

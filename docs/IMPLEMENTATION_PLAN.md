@@ -3,9 +3,9 @@
 Work stops at every phase boundary for user approval. A phase can be implemented
 but still have explicit blocked verification; never treat a skipped gate as a pass.
 
-Current status (2026-11-21): **Phases 1–4 complete and verified**. Phase 4 was
-explicitly authorized by the user and pushed after agreement. **Phase 5 is in progress:**
-availability and the transactional booking backend are implemented; booking UI is next. See
+Current status (2026-11-22): **Phases 1–5 complete and verified** within the documented
+internal booking scope. Availability and backend commits are pushed after agreement;
+the booking UI commit remains local. **Phase 6 calendar views are next.** See
 `PROGRESS.md` for the acceptance evidence and remaining operational limitations.
 
 | Phase | Deliverable | Required gate |
@@ -92,5 +92,8 @@ Completed on 2026-11-21; see `PROGRESS.md` for results and architecture refineme
   allocation, hours/buffers/qualifications/policies, timezone and capacity tests.
 - Implemented: appointment/allocation migration, PostgreSQL exclusion constraints,
   transactional revalidation, idempotency, cancellation/rescheduling and race tests.
-- Next: booking UI and full-stack verification. Phase 5 remains incomplete until these pass.
+- Implemented: responsive booking UI and full-stack create/reload/reschedule/cancel flow.
+- Final verification: 100 backend, 27 frontend and 12 desktop/mobile browser checks passed.
+- Phase 6 calendar views are next; Phase 5 retains the documented conservative config
+  guard and internal owner/manager scope. Notification dispatch belongs to Phase 8.
 - New commits remain local pending agreement to push.

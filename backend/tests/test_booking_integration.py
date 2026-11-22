@@ -110,6 +110,19 @@ def test_booking_retry_conflict_cancel_and_history(harness: Harness) -> None:
         },
     ).json()
     assert availability["slots"][0]["starts_at"] == "2026-11-23T08:45:00Z"
+    params = {
+        "service_id": data["service_id"],
+        "location_id": data["location_id"],
+        "start": "2026-11-23",
+        "exclude_booking_id": receipt["id"],
+    }
+    editable = owner.get(f"/api/v1/workspaces/{wid}/availability", params=params)
+    assert editable.json()["slots"][0]["starts_at"] == data["starts_at"]
+    missing = owner.get(
+        f"/api/v1/workspaces/{wid}/availability",
+        params={**params, "exclude_booking_id": str(uuid4())},
+    )
+    assert missing.status_code == 404
     blocked = harness.post(
         owner,
         f"/workspaces/{wid}/catalog/staff/{staff['id']}",

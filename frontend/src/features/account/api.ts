@@ -90,12 +90,14 @@ export async function api(
   method = 'GET',
   body?: unknown,
   authenticated = true,
+  idempotencyKey?: string,
 ): Promise<unknown> {
   const send = async () =>
     fetch(`/api/v1${path}`, {
       method,
       credentials: 'same-origin',
       headers: {
+        ...(idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : {}),
         ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
         ...(method !== 'GET' ? { 'X-CSRF-Token': await csrf() } : {}),
       },

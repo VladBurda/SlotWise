@@ -14,6 +14,7 @@ class AvailabilityQuery(Input):
     days: int = Field(default=1, ge=1, le=7)
     duration_minutes: int | None = Field(default=None, ge=5, le=1440)
     employee_id: UUID | None = None
+    exclude_booking_id: UUID | None = None
     limit: int = Field(default=100, ge=1, le=500)
 
     @field_validator("start")

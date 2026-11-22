@@ -1152,6 +1152,51 @@ footer span:last-child {
   }
 }
 /* Scheduling configuration */
+.booking-page {
+  display: grid;
+  gap: 1.25rem;
+}
+.booking-editor fieldset {
+  border: 0;
+  padding: 0;
+  margin: 1rem 0;
+  min-width: 0;
+}
+.booking-slots {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 0.6rem;
+  max-height: 360px;
+  overflow-y: auto;
+  padding: 0.4rem;
+  margin: 1rem 0;
+}
+.booking-slots button {
+  white-space: normal;
+  height: auto;
+  min-height: 44px;
+}
+.booking-list {
+  list-style: none;
+  padding: 0;
+}
+.booking-list li {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.25rem 0;
+  border-bottom: 1px solid #dce4eb;
+}
+.booking-list h3 {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.booking-editor input,
+.booking-editor select {
+  max-width: 100%;
+}
 .catalog-tabs,
 .catalog-row {
   display: flex;

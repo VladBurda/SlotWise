@@ -236,6 +236,75 @@ test('configure staff, assets and services with qualified matches', async ({
       path: `../docs/screenshots/service-${isMobile ? 'mobile' : 'desktop'}.png`,
       fullPage: true,
     });
+
+  await page.getByRole('button', { name: 'Appointments', exact: true }).click();
+  await page
+    .getByRole('button', { name: 'New appointment', exact: true })
+    .click();
+  await page
+    .getByRole('combobox', { name: 'Service', exact: true })
+    .selectOption({ label: 'Vehicle diagnostics' });
+  await page
+    .getByRole('combobox', { name: 'Location', exact: true })
+    .selectOption({ label: 'Main workshop' });
+  const monday = new Date();
+  monday.setUTCDate(monday.getUTCDate() + 8);
+  while (monday.getUTCDay() !== 1) monday.setUTCDate(monday.getUTCDate() + 1);
+  await page
+    .getByLabel('Date at location')
+    .fill(monday.toISOString().slice(0, 10));
+  await page.getByRole('button', { name: 'Find available times' }).click();
+  await page
+    .getByRole('group', { name: 'Available times' })
+    .getByRole('button')
+    .first()
+    .click();
+  await page.getByLabel('Customer name').fill('Jamie Taylor');
+  if (process.env.SLOTWISE_BOOKING_CAPTURE === '1')
+    await page.screenshot({
+      path: `../docs/screenshots/booking-editor-${isMobile ? 'mobile' : 'desktop'}.png`,
+      fullPage: true,
+    });
+  await page
+    .getByRole('button', { name: 'Confirm booking', exact: true })
+    .click();
+  await expect(
+    page.getByText('Appointment confirmed for Jamie Taylor.', { exact: true }),
+  ).toBeVisible();
+  await page.reload();
+  await page.getByRole('button', { name: 'Appointments', exact: true }).click();
+  await expect(
+    page.getByRole('heading', { name: 'Jamie Taylor' }),
+  ).toBeVisible();
+  await page.getByRole('button', { name: 'Reschedule', exact: true }).click();
+  await page.getByRole('button', { name: 'Find available times' }).click();
+  await page
+    .getByRole('group', { name: 'Available times' })
+    .getByRole('button')
+    .nth(1)
+    .click();
+  await page.getByRole('button', { name: 'Confirm reschedule' }).click();
+  await expect(
+    page.getByText('Appointment confirmed for Jamie Taylor.', { exact: true }),
+  ).toBeVisible();
+  await page
+    .getByRole('button', { name: 'Cancel appointment', exact: true })
+    .click();
+  await page.getByRole('button', { name: 'Confirm cancellation' }).click();
+  await expect(
+    page.getByText('Appointment cancelled.', { exact: true }),
+  ).toBeVisible();
+  await expect(page.getByText('cancelled', { exact: true })).toBeVisible();
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBe(true);
+  if (process.env.SLOTWISE_BOOKING_CAPTURE === '1')
+    await page.screenshot({
+      path: `../docs/screenshots/bookings-${isMobile ? 'mobile' : 'desktop'}.png`,
+      fullPage: true,
+    });
 });
 
 test.describe('account lifecycle against PostgreSQL and Mailpit', () => {

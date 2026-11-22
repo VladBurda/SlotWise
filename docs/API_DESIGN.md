@@ -208,3 +208,10 @@ Lock waits are bounded to five seconds; lock/deadlock/serialization errors roll 
 and return 503 `booking_busy`. Retry with the same key. No automatic retry is performed.
 Cancellation policy and cutoff also apply to rescheduling and to managers/owners.
 The API does not send notifications or expose public/customer booking operations yet.
+
+Availability accepts optional `exclude_booking_id` for rescheduling previews. The ID
+must reference a confirmed appointment in the current workspace or returns 404. Its
+allocations are excluded only from this preview; reservations are never released by
+a read. Booking writes ignore preview output and independently revalidate the move.
+The management UI retains a command/key while retrying uncertain responses in the open
+editor. It clears stale slot selection on definitive rejection and refreshes availability.

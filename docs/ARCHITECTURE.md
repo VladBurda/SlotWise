@@ -257,3 +257,12 @@ Booking events form durable outbox input; delivery is intentionally deferred. In
 owner/manager routes enforce cancellation policies; public ownership and UI are pending.
 Configuration updates conservatively reject upcoming allocations until explicit conflict
 resolution exists. See the API/engine docs for limits and retry behavior.
+
+The final Phase 5 milestone adds a lazy-loaded Appointments management section. Zod
+validates API receipts and slots; TanStack Query keys include workspace/search/page.
+Search-field changes clear selections. The command hook freezes uncertain writes and
+reuses their key on explicit retry; it does not persist commands after navigation.
+Times use the selected location's IANA zone with numeric offsets to distinguish DST
+folds. Rescheduling previews may exclude their own tenant-scoped active appointment,
+while transactional revalidation remains unchanged. Desktop/mobile browser tests use
+real PostgreSQL, Redis and Mailpit and cover the full booking lifecycle.

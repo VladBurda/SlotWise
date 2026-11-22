@@ -12,7 +12,7 @@ from slotwise.catalog.schemas import ServiceInput
 from slotwise.catalog.service import CatalogService
 from slotwise.core.errors import DomainError
 from slotwise.scheduling.engine import Occupied, SearchTooComplex, Snapshot, Unit, feasible_slots
-from slotwise.scheduling.models import Allocation
+from slotwise.scheduling.models import Allocation, Appointment
 from slotwise.scheduling.schemas import AvailabilityQuery, AvailabilityResult
 
 
@@ -75,7 +75,17 @@ class SchedulingService(CatalogService):
         self, workspace_id: UUID, query: AvailabilityQuery
     ) -> AvailabilityResult:
         await self.access(workspace_id, {"owner", "manager"}, lock=True)
-        snapshot = await self.snapshot(workspace_id, query)
+        if query.exclude_booking_id is not None:
+            booking = await self.db.scalar(
+                select(Appointment).where(
+                    Appointment.workspace_id == workspace_id,
+                    Appointment.id == query.exclude_booking_id,
+                    Appointment.status == "confirmed",
+                )
+            )
+            if booking is None:
+                raise DomainError(404, "booking_not_found", "Active booking not found.")
+        snapshot = await self.snapshot(workspace_id, query, query.exclude_booking_id)
         await self.db.commit()
         computed_at = now()
         try:
