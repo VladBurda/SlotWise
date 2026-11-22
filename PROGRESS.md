@@ -5,8 +5,8 @@ Updated: 2026-11-22 (Europe/Berlin).
 ## Current status
 
 **Phases 1–5 are complete and verified within the documented boundaries.**
-Availability/backend commits through `5ffdebc` are pushed. The booking UI commit stays
-local pending agreement to push. Phase 6 calendar views are in progress.
+All verified commits through `4e1c979` are pushed. Phase 6 staff/resource timelines
+are implemented locally; transactional drag/resize and realtime remain next.
 Phase 2 was authorized by the continuation request after closing the Phase 1 Docker gap.
 
 ## Phase 1 retained
@@ -394,3 +394,34 @@ query filters. Browser checks exercise all four calendar views, assignment/statu
 filters, details dialog and date navigation with real persisted bookings. Desktop/mobile
 screenshots were reviewed and retained. Production build/readiness, TypeScript, ESLint,
 Prettier, Ruff and strict mypy passed. No migration or dependency was added.
+
+## Phase 6 — staff/resource timeline milestone (2026-11-22)
+
+Pushed `4911524` and `4e1c979` on explicit request. Added daily Staff timeline and
+Resource timeline views using persisted booking assignments. Active catalog rows remain
+visible when empty; historical/inactive assignments are retained. Filters and the native
+details dialog are shared with the existing calendar. Rows reveal in batches of 20.
+
+The horizontal axis uses actual elapsed UTC time between local date boundaries, so
+23/25-hour DST days and repeated-hour offsets remain distinct. Civil boundaries are
+found without assuming a midnight offset or 24-hour duration; skipped dates show an
+explicit message. Confirmed bookings show service time over a shaded buffered span;
+cancelled records show only historical service time. Overlaps occupy separate lanes;
+half-open adjacency reuses a lane. Resource cards report the assigned unit quantity.
+Overnight and buffer-only spans are clipped to the displayed date. Timeline fetches
+extend the calendar envelope by another day for maximum buffers in extreme timezones.
+
+Rows have sticky labels, keyboard-scrollable horizontal content and clickable booking
+bars. A readable appointment list offers full-size selection targets for very short
+bookings. Empty space is explicitly not advertised as availability. This is still a
+read-only visualization: transactional drag/resize and authenticated realtime delivery
+remain outstanding. No backend, migration or dependency changes in this milestone.
+
+Verification: **40 frontend tests** and **12 full-stack desktop/mobile browser checks**
+passed. TypeScript, ESLint, Prettier and the production Compose build/readiness checks
+passed. Timeline tests cover DST transitions, skipped dates, non-hour offsets,
+overlapping/adjacent bookings, buffer-only clipping, resource quantities and history.
+Desktop/mobile screenshots are retained under `docs/screenshots/timeline-*.png`.
+The two timeline browser scenarios were rerun after the final axis-label adjustment.
+Backend code is unchanged; its previous **101-test** result was not rerun for this
+frontend milestone. This milestone is committed locally pending push approval.

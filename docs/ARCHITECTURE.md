@@ -276,3 +276,12 @@ grouping removes the padding from display. Large result sets stop with an explic
 error at 5,000 records. This is not a realtime or snapshot-consistent paginated feed;
 users can refresh after concurrent changes. Timelines, drag/resize and realtime remain
 separate Phase 6 milestones.
+
+Daily staff/resource timelines reuse the filtered booking snapshots. Pure layout code
+groups assignments, clips reservation spans to actual local-day UTC bounds and partitions
+overlaps into deterministic lanes. Rows show appointment concurrency, not one row per
+capacity unit; each resource card labels its unit demand. Cancelled history excludes
+buffer shading because it no longer reserves capacity. A larger query envelope captures
+buffer-only spans at extreme offsets. Sticky labels, a scrollable axis and an alternative
+appointment list preserve access on mobile and for short-duration cards. There are no
+drag/drop mutations or live event subscriptions yet.

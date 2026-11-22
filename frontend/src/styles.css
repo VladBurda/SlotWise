@@ -1152,6 +1152,185 @@ footer span:last-child {
   }
 }
 /* Scheduling configuration */
+.timeline {
+  margin-top: 1.5rem;
+  min-width: 0;
+}
+.timeline > p {
+  color: #52675b;
+  line-height: 1.6;
+  margin: 0.75rem 0 1rem;
+}
+.timeline-scroll {
+  overflow: auto;
+  max-width: 100%;
+  border: 1px solid #cbd8d1;
+  border-radius: 10px;
+}
+.timeline-scroll:focus-visible {
+  outline: 3px solid #216c58;
+  outline-offset: 3px;
+}
+.timeline-canvas {
+  min-width: 1450px;
+}
+.timeline-row {
+  display: grid;
+  grid-template-columns: 170px minmax(1280px, 1fr);
+  border-bottom: 1px solid #dce4df;
+}
+.timeline-row:last-child {
+  border-bottom: 0;
+}
+.timeline-label {
+  position: sticky;
+  left: 0;
+  z-index: 3;
+  background: #f6faf8;
+  border-right: 1px solid #cbd8d1;
+  padding: 0.8rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  overflow-wrap: anywhere;
+  font-size: 0.85rem;
+}
+.timeline-label span {
+  color: #63756c;
+  font-size: 0.75rem;
+}
+.timeline-axis {
+  height: 62px;
+  position: relative;
+  margin-right: 1px;
+}
+.timeline-tick {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  transform: translateX(-50%);
+  padding: 0.5rem 2px;
+  display: grid;
+  align-content: start;
+  gap: 0.2rem;
+  font-size: 0.7rem;
+}
+.timeline-tick small {
+  font-size: 0.65rem;
+  color: #63756c;
+}
+.timeline-tick:first-child {
+  transform: none;
+}
+.timeline-tick.last {
+  transform: translateX(-100%);
+  border-left: 0;
+  border-right: 1px solid #dce4df;
+}
+.timeline-tick.last small {
+  visibility: hidden;
+}
+.timeline-track {
+  position: relative;
+  min-width: 0;
+  background: white;
+  margin-right: 1px;
+}
+.timeline-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-left: 1px solid #edf1ef;
+  pointer-events: none;
+}
+.timeline-booking {
+  position: absolute;
+  min-width: 5px;
+  height: 52px;
+  padding: 0;
+  border: 1px solid #216c58;
+  border-radius: 5px;
+  background: repeating-linear-gradient(
+    135deg,
+    #e3eee8,
+    #e3eee8 4px,
+    #f4f8f5 4px,
+    #f4f8f5 8px
+  );
+  color: #173f31;
+  cursor: pointer;
+  overflow: hidden;
+  text-align: left;
+}
+.timeline-booking:focus-visible,
+.timeline-booking:hover {
+  outline: 3px solid #164b3b;
+  outline-offset: 2px;
+  z-index: 2;
+}
+.timeline-service {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: #a6d6bd;
+}
+.timeline-booking.cancelled {
+  border-style: dashed;
+  border-color: #838d87;
+  color: #424e47;
+  background: #f4f4f4;
+}
+.timeline-booking.cancelled .timeline-service {
+  background: #e4e7e5;
+}
+.timeline-booking-text {
+  display: block;
+  position: relative;
+  padding: 0.35rem;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.timeline-booking-text small {
+  display: block;
+  font-size: 0.65rem;
+  font-weight: 400;
+}
+.timeline-empty {
+  position: sticky;
+  left: 190px;
+  top: 20px;
+  font-size: 0.8rem;
+  color: #63756c;
+  padding: 1rem;
+  display: inline-block;
+}
+.timeline-list {
+  margin-top: 1rem;
+}
+.timeline-list summary {
+  cursor: pointer;
+  padding: 0.75rem 0;
+  font-weight: 600;
+}
+.timeline-list ul {
+  list-style: none;
+  padding: 0;
+}
+.timeline-list button {
+  width: 100%;
+  text-align: left;
+  min-height: 44px;
+  padding: 0.75rem;
+  margin: 0.3rem 0;
+  background: #f6faf8;
+  border: 1px solid #cbd8d1;
+  border-radius: 8px;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
 .calendar-controls {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));

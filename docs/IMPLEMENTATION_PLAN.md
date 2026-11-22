@@ -102,6 +102,8 @@ Completed on 2026-11-21; see `PROGRESS.md` for results and architecture refineme
 
 - Implemented: read-only day/week/month/agenda views, local timezone labels, overnight
   grouping, location/staff/resource/status filters, details dialog and bounded range API.
-- Next: staff/resource timelines and transactional drag/resize interactions.
+- Implemented: daily staff/resource timelines, overlapping lanes, buffered spans,
+  quantities, historical assignments and DST-aware elapsed-time axes.
+- Next: transactional drag/resize interactions.
 - Then: authenticated realtime delivery, workspace isolation and reconnect consistency.
 - Phase 6 remains incomplete until those behaviors and their verification are delivered.

@@ -1,7 +1,8 @@
 import type { Booking } from '@/features/bookings/contracts';
 import { localDay } from '@/features/bookings/contracts';
 
-export type CalendarView = 'day' | 'week' | 'month' | 'agenda';
+export type CalendarView =
+  'day' | 'week' | 'month' | 'agenda' | 'staff' | 'resources';
 // Date arithmetic uses UTC noon for civil labels, never browser-local midnight.
 export function shiftDay(day: string, amount: number) {
   const value = new Date(`${day}T12:00:00Z`);
@@ -39,7 +40,7 @@ export function overlapsDay(booking: Booking, day: string, timezone: string) {
     ) >= day
   );
 }
-export function rangeParams(days: string[]) {
+export function rangeParams(days: string[], includeBuffers = false) {
   // A generous UTC envelope covers all IANA offsets and DST. Display buckets use
   // exact civil dates; no ambiguous local-time-to-UTC conversion is necessary.
   const first = days[0],
@@ -47,10 +48,10 @@ export function rangeParams(days: string[]) {
   if (!first || !last) throw new Error('Choose a valid calendar date.');
   return new URLSearchParams({
     after: new Date(
-      Date.parse(`${first}T00:00:00Z`) - 36 * 3600000,
+      Date.parse(`${first}T00:00:00Z`) - (includeBuffers ? 60 : 36) * 3600000,
     ).toISOString(),
     before: new Date(
-      Date.parse(`${last}T00:00:00Z`) + 60 * 3600000,
+      Date.parse(`${last}T00:00:00Z`) + (includeBuffers ? 84 : 60) * 3600000,
     ).toISOString(),
   });
 }

@@ -345,6 +345,39 @@ test('configure staff, assets and services with qualified matches', async ({
   await expect(page.getByText(/0 appointments/)).toBeVisible();
   await page.getByRole('button', { name: 'Previous period' }).click();
   await expect(page.getByText(/1 appointments/)).toBeVisible();
+  for (const view of ['staff', 'resources']) {
+    await page
+      .getByRole('combobox', { name: 'Calendar view', exact: true })
+      .selectOption(view);
+    const timeline = page.getByRole('region', {
+      name: view === 'staff' ? 'Staff timeline' : 'Resource timeline',
+      exact: true,
+    });
+    await expect(timeline).toBeVisible();
+    await timeline
+      .getByRole('button', { name: /Jamie Taylor.*Vehicle diagnostics/ })
+      .click();
+    await expect(
+      page.getByRole('dialog', { name: 'Appointment details' }),
+    ).toContainText('Jamie Taylor');
+    await page.keyboard.press('Escape');
+    await expect(
+      page.getByRole('dialog', { name: 'Appointment details' }),
+    ).toBeHidden();
+    if (process.env.SLOTWISE_TIMELINE_CAPTURE === '1')
+      await page.screenshot({
+        path: `../docs/screenshots/timeline-${view}-${isMobile ? 'mobile' : 'desktop'}.png`,
+        fullPage: true,
+      });
+    await page.getByRole('button', { name: 'Next period' }).click();
+    await expect(
+      timeline.getByRole('button', { name: /Jamie Taylor/ }),
+    ).toHaveCount(0);
+    await page.getByRole('button', { name: 'Previous period' }).click();
+    await expect(
+      timeline.getByRole('button', { name: /Jamie Taylor/ }),
+    ).toHaveCount(1);
+  }
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= window.innerWidth,

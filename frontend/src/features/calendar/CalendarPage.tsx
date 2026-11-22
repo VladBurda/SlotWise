@@ -10,6 +10,7 @@ import {
   type Booking,
 } from '@/features/bookings/contracts';
 import { loadBookingConfig } from '@/features/bookings/data';
+import { Timeline } from './Timeline';
 import {
   calendarDays,
   dayTitle,
@@ -37,7 +38,9 @@ export function CalendarPage({ workspace }: { workspace: Workspace }) {
   const location = config.data?.locations.find((l) => l.id === locationId);
   const timezone = location?.timezone ?? workspace.timezone;
   const days = calendarDays(day, view);
-  const query = days.length ? rangeParams(days) : new URLSearchParams();
+  const query = days.length
+    ? rangeParams(days, view === 'staff' || view === 'resources')
+    : new URLSearchParams();
   if (locationId) query.set('location_id', locationId);
   if (employeeId) query.set('employee_id', employeeId);
   if (resourceId) query.set('resource_id', resourceId);
@@ -77,7 +80,13 @@ export function CalendarPage({ workspace }: { workspace: Workspace }) {
       const next = new Date(`${day.slice(0, 7)}-01T12:00:00Z`);
       next.setUTCMonth(next.getUTCMonth() + direction);
       setDay(next.toISOString().slice(0, 10));
-    } else setDay(shiftDay(day, direction * (view === 'day' ? 1 : 7)));
+    } else
+      setDay(
+        shiftDay(
+          day,
+          direction * (view === 'week' || view === 'agenda' ? 7 : 1),
+        ),
+      );
     setSelected(null);
   };
   return (
@@ -112,6 +121,8 @@ export function CalendarPage({ workspace }: { workspace: Workspace }) {
             <option value="week">Week</option>
             <option value="month">Month</option>
             <option value="agenda">Agenda</option>
+            <option value="staff">Staff timeline</option>
+            <option value="resources">Resource timeline</option>
           </select>
         </label>
         <label>
@@ -248,59 +259,78 @@ export function CalendarPage({ workspace }: { workspace: Workspace }) {
       {bookings.isError && <p role="alert">{errorMessage(bookings.error)}</p>}
       {bookings.data && !bookings.isError && days.length > 0 && (
         <>
-          <p className="calendar-caption">
-            {dayTitle(days[0]!)} – {dayTitle(days.at(-1)!)} ·{' '}
-            {new Date(day).getUTCFullYear()} ·{' '}
-            {
-              bookings.data.filter((b) =>
-                days.some((d) => overlapsDay(b, d, timezone)),
-              ).length
-            }{' '}
-            appointments
-          </p>
-          <div
-            className={`calendar-grid calendar-${view}`}
-            aria-label={`${view} appointments`}
-          >
-            {days.map((date) => {
-              const entries = bookings.data.filter((b) =>
-                overlapsDay(b, date, timezone),
-              );
-              return (
-                <section
-                  key={date}
-                  className={
-                    date === localDay(new Date().toISOString(), timezone)
-                      ? 'calendar-day today'
-                      : 'calendar-day'
-                  }
-                  aria-label={date}
-                >
-                  <h3>{dayTitle(date)}</h3>
-                  {entries.length === 0 && (
-                    <p className="calendar-empty">No appointments</p>
-                  )}
-                  {entries.map((booking) => (
-                    <button
-                      type="button"
-                      className={`calendar-appointment ${booking.status}`}
-                      key={booking.id}
-                      aria-pressed={selected === booking.id}
-                      onClick={() => setSelected(booking.id)}
+          {view === 'staff' || view === 'resources' ? (
+            <Timeline
+              key={`${view}:${day}:${locationId}:${employeeId}:${resourceId}:${status}`}
+              day={day}
+              timezone={timezone}
+              kind={view}
+              items={config.data?.items ?? []}
+              bookings={bookings.data}
+              locationId={locationId}
+              selectedId={view === 'staff' ? employeeId : resourceId}
+              onSelect={setSelected}
+            />
+          ) : (
+            <>
+              <p className="calendar-caption">
+                {dayTitle(days[0]!)} – {dayTitle(days.at(-1)!)} ·{' '}
+                {new Date(day).getUTCFullYear()} ·{' '}
+                {
+                  bookings.data.filter((b) =>
+                    days.some((d) => overlapsDay(b, d, timezone)),
+                  ).length
+                }{' '}
+                appointments
+              </p>
+              <div
+                className={`calendar-grid calendar-${view}`}
+                aria-label={`${view} appointments`}
+              >
+                {days.map((date) => {
+                  const entries = bookings.data.filter((b) =>
+                    overlapsDay(b, date, timezone),
+                  );
+                  return (
+                    <section
+                      key={date}
+                      className={
+                        date === localDay(new Date().toISOString(), timezone)
+                          ? 'calendar-day today'
+                          : 'calendar-day'
+                      }
+                      aria-label={date}
                     >
-                      <strong>{booking.customer_name}</strong>
-                      <span>{booking.service_name}</span>
-                      <span>{slotLabel(booking.slot.starts_at, timezone)}</span>
-                      {localDay(booking.slot.starts_at, timezone) !== date && (
-                        <span>Continues from previous day</span>
+                      <h3>{dayTitle(date)}</h3>
+                      {entries.length === 0 && (
+                        <p className="calendar-empty">No appointments</p>
                       )}
-                      {booking.status === 'cancelled' && <span>Cancelled</span>}
-                    </button>
-                  ))}
-                </section>
-              );
-            })}
-          </div>
+                      {entries.map((booking) => (
+                        <button
+                          type="button"
+                          className={`calendar-appointment ${booking.status}`}
+                          key={booking.id}
+                          aria-pressed={selected === booking.id}
+                          onClick={() => setSelected(booking.id)}
+                        >
+                          <strong>{booking.customer_name}</strong>
+                          <span>{booking.service_name}</span>
+                          <span>
+                            {slotLabel(booking.slot.starts_at, timezone)}
+                          </span>
+                          {localDay(booking.slot.starts_at, timezone) !==
+                            date && <span>Continues from previous day</span>}
+                          {booking.status === 'cancelled' && (
+                            <span>Cancelled</span>
+                          )}
+                        </button>
+                      ))}
+                    </section>
+                  );
+                })}
+              </div>
+            </>
+          )}
         </>
       )}
       <dialog
