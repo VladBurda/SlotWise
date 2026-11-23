@@ -267,7 +267,7 @@ folds. Rescheduling previews may exclude their own tenant-scoped active appointm
 while transactional revalidation remains unchanged. Desktop/mobile browser tests use
 real PostgreSQL, Redis and Mailpit and cover the full booking lifecycle.
 
-Phase 6 introduces a separate lazy-loaded, read-only Calendar section. It shares
+Phase 6 introduces a separate lazy-loaded Calendar section. It shares
 booking configuration queries and uses workspace/range/filter-scoped cache keys. The
 API filters service-time overlap and snapshot assignments; the browser groups results
 by IANA-zone civil dates. Civil arithmetic uses UTC noon to avoid browser-zone DST
@@ -283,5 +283,17 @@ overlaps into deterministic lanes. Rows show appointment concurrency, not one ro
 capacity unit; each resource card labels its unit demand. Cancelled history excludes
 buffer shading because it no longer reserves capacity. A larger query envelope captures
 buffer-only spans at extreme offsets. Sticky labels, a scrollable axis and an alternative
-appointment list preserve access on mobile and for short-duration cards. There are no
-drag/drop mutations or live event subscriptions yet.
+appointment list preserve access on mobile and for short-duration cards.
+
+Timeline pointer gestures now produce move/resize proposals measured in elapsed UTC
+minutes; moves snap to 15 minutes and duration changes snap to the service's duration
+step. Keyboard arrows and details-dialog buttons provide alternatives to dragging.
+Gestures retain the staff assignment; dragging between rows does not reassign staff or
+resources. A modal compares original/proposed times with offsets before issuing the
+existing versioned, idempotent reschedule command. The backend revalidates duration,
+availability and resource allocation transactionally. The persisted card remains at its
+original position until success, so a rejected proposal does not leave an optimistic
+placement behind. Success and rejection invalidate calendar, booking and availability
+queries. Uncertain responses lock modal dismissal and reuse the exact command/key;
+as with the booking editor, requests are not persisted across page reloads. Realtime
+event subscriptions and reconnect consistency remain outstanding.

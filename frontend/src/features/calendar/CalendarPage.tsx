@@ -12,6 +12,11 @@ import {
 import { loadBookingConfig } from '@/features/bookings/data';
 import { Timeline } from './Timeline';
 import {
+  CalendarChange,
+  proposeChange,
+  type CalendarProposal,
+} from './CalendarChange';
+import {
   calendarDays,
   dayTitle,
   overlapsDay,
@@ -30,6 +35,12 @@ export function CalendarPage({ workspace }: { workspace: Workspace }) {
   const [resourceId, setResourceId] = useState('');
   const [status, setStatus] = useState('confirmed');
   const [selected, setSelected] = useState<string | null>(null);
+  const [proposal, setProposal] = useState<CalendarProposal | null>(null);
+  const canEdit = workspace.role === 'owner' || workspace.role === 'manager';
+  const propose = (next: CalendarProposal) => {
+    setSelected(null);
+    setProposal(next);
+  };
   const dialog = useRef<HTMLDialogElement>(null);
   const config = useQuery({
     queryKey: ['booking-config', workspace.id],
@@ -270,6 +281,7 @@ export function CalendarPage({ workspace }: { workspace: Workspace }) {
               locationId={locationId}
               selectedId={view === 'staff' ? employeeId : resourceId}
               onSelect={setSelected}
+              onPropose={canEdit ? propose : undefined}
             />
           ) : (
             <>
@@ -359,13 +371,59 @@ export function CalendarPage({ workspace }: { workspace: Workspace }) {
                 .map((r) => names.get(r.resource_id) ?? 'Assigned resource')
                 .join(', ') || 'None required'}
             </p>
-            <p>Use Appointments to reschedule or cancel this booking.</p>
+            {canEdit && active.status === 'confirmed' && (
+              <div className="form-actions">
+                <Button
+                  variant="outline"
+                  onClick={() => propose(proposeChange(active, -15, false))}
+                >
+                  Move 15 minutes earlier
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => propose(proposeChange(active, 15, false))}
+                >
+                  Move 15 minutes later
+                </Button>
+                {[-1, 1].map((direction) => {
+                  const service = config.data?.items.find(
+                    (item) => item.id === active.service_id,
+                  )?.data;
+                  const step =
+                    service?.kind === 'services'
+                      ? service.duration_step_minutes
+                      : 5;
+                  const next = proposeChange(active, direction * step, true);
+                  return (
+                    <Button
+                      key={direction}
+                      variant="outline"
+                      disabled={next.duration <= 0 || next.duration > 1440}
+                      onClick={() => propose(next)}
+                    >
+                      {direction < 0 ? 'Shorten' : 'Extend'} by {step} minutes
+                    </Button>
+                  );
+                })}
+              </div>
+            )}
+            <p>
+              Use Appointments to change staff, choose another date, or cancel.
+            </p>
             <Button variant="outline" onClick={() => setSelected(null)}>
               Close details
             </Button>
           </>
         )}
       </dialog>
+      {proposal && (
+        <CalendarChange
+          proposal={proposal}
+          workspaceId={workspace.id}
+          timezone={timezone}
+          onClose={() => setProposal(null)}
+        />
+      )}
     </section>
   );
 }

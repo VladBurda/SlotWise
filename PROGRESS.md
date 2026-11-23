@@ -1,12 +1,12 @@
 # SlotWise progress
 
-Updated: 2026-11-22 (Europe/Berlin).
+Updated: 2026-11-23 (Europe/Berlin).
 
 ## Current status
 
 **Phases 1–5 are complete and verified within the documented boundaries.**
-All verified commits through `4e1c979` are pushed. Phase 6 staff/resource timelines
-are implemented locally; transactional drag/resize and realtime remain next.
+All verified commits through `534ccca` are pushed. Phase 6 calendar drag/resize
+is implemented locally; authenticated realtime delivery remains next.
 Phase 2 was authorized by the continuation request after closing the Phase 1 Docker gap.
 
 ## Phase 1 retained
@@ -425,3 +425,30 @@ Desktop/mobile screenshots are retained under `docs/screenshots/timeline-*.png`.
 The two timeline browser scenarios were rerun after the final axis-label adjustment.
 Backend code is unchanged; its previous **101-test** result was not rerun for this
 frontend milestone. This milestone is committed locally pending push approval.
+
+## Phase 6 — calendar move/resize milestone (2026-11-23)
+
+The preceding timeline commit `534ccca` was pushed on explicit agreement. Calendar
+owners/managers can now drag confirmed timeline cards to propose a time change and
+drag the duration handle to resize. Moves use 15-minute elapsed-time increments;
+resize uses the service duration step. Keyboard arrows (Shift for resize) and large
+buttons in appointment details provide alternatives for mobile and short cards.
+Assignment stays on the same staff member; resources are reallocated by the existing
+service rules. Cross-row reassignment is not supported by these gestures.
+
+Every proposal opens a review dialog showing original/proposed times and UTC offsets.
+Confirmation submits the existing versioned, idempotent reschedule command. No
+optimistic placement survives the gesture: the original booking remains displayed
+until the server confirms. Conflicts refresh stale data and let the user keep the
+original time; uncertain responses freeze dismissal and retry the exact command/key.
+Cancelled bookings remain read-only. No backend, migration or dependency changes.
+
+Verification: **45 frontend tests** passed, including DST-fold movement, duration
+changes, confirmation payload/version, conflict refresh, uncertain-result retries and
+keyboard/read-only behavior. **12 full-stack desktop/mobile browser checks** passed,
+including real mouse drag/resize, abandoning a proposal without changing the booking,
+keyboard movement, mobile button controls and persisted duration changes. TypeScript,
+ESLint, Prettier and the production Compose build/readiness checks passed. Desktop and
+mobile confirmation screenshots were reviewed and retained. Backend code is unchanged;
+the previous 101-test backend result was not rerun. New work remains local pending push
+agreement. Authenticated realtime delivery and reconnect consistency remain outstanding.

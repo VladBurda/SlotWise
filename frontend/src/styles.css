@@ -1268,6 +1268,18 @@ footer span:last-child {
   outline-offset: 2px;
   z-index: 2;
 }
+.timeline-resize {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 12px;
+  display: grid;
+  align-items: center;
+  background: #d4e6dd;
+  cursor: ew-resize;
+  z-index: 1;
+}
 .timeline-service {
   position: absolute;
   top: 0;

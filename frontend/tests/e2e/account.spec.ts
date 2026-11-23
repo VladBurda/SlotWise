@@ -287,6 +287,93 @@ test('configure staff, assets and services with qualified matches', async ({
   await expect(
     page.getByText('Appointment confirmed for Jamie Taylor.', { exact: true }),
   ).toBeVisible();
+  await page.getByRole('button', { name: 'Calendar', exact: true }).click();
+  await page
+    .getByLabel('Calendar date')
+    .fill(monday.toISOString().slice(0, 10));
+  await page
+    .getByRole('combobox', { name: 'Calendar view', exact: true })
+    .selectOption('staff');
+  const editableTimeline = page.getByRole('region', {
+    name: 'Staff timeline',
+    exact: true,
+  });
+  const card = editableTimeline.getByRole('button', { name: /Jamie Taylor/ });
+  await expect(card).toBeVisible();
+  const originalLabel = await card.getAttribute('aria-label');
+  if (isMobile) {
+    await card.click();
+    await page.getByRole('button', { name: 'Move 15 minutes later' }).click();
+  } else {
+    await card.scrollIntoViewIfNeeded();
+    const box = (await card.boundingBox())!;
+    const width = await card.evaluate(
+      (element) => element.parentElement!.getBoundingClientRect().width,
+    );
+    await page.mouse.move(box.x + 3, box.y + 15);
+    await page.mouse.down();
+    await page.mouse.move(box.x + 3 + width / 96, box.y + 15, { steps: 5 });
+    await page.mouse.up();
+  }
+  const changeDialog = page.getByRole('dialog', {
+    name: 'Confirm calendar change',
+    exact: true,
+  });
+  await expect(changeDialog).toContainText('Proposed:');
+  if (process.env.SLOTWISE_CHANGE_CAPTURE === '1')
+    await page.screenshot({
+      path: `../docs/screenshots/calendar-change-${isMobile ? 'mobile' : 'desktop'}.png`,
+      fullPage: true,
+    });
+  await page.getByRole('button', { name: 'Keep original time' }).click();
+  await expect(card).toHaveAttribute('aria-label', originalLabel!);
+  await card.press('ArrowRight');
+  const movedResponse = page.waitForResponse(
+    (response) =>
+      response.url().endsWith('/reschedule') &&
+      response.request().method() === 'POST',
+  );
+  await page
+    .getByRole('button', { name: 'Confirm calendar change', exact: true })
+    .click();
+  expect((await movedResponse).status()).toBe(200);
+  await expect(changeDialog).toBeHidden();
+  await expect(card).not.toHaveAttribute('aria-label', originalLabel!);
+  if (isMobile) {
+    await card.click();
+    await page.getByRole('button', { name: 'Extend by 5 minutes' }).click();
+  } else {
+    const handle = card.locator('[data-resize]');
+    await handle.scrollIntoViewIfNeeded();
+    const box = (await handle.boundingBox())!;
+    const width = await card.evaluate(
+      (element) => element.parentElement!.getBoundingClientRect().width,
+    );
+    await page.mouse.move(box.x + box.width / 2, box.y + 15);
+    await page.mouse.down();
+    await page.mouse.move(box.x + box.width / 2 + width / 144, box.y + 15, {
+      steps: 5,
+    });
+    await page.mouse.up();
+  }
+  const resizedResponse = page.waitForResponse(
+    (response) =>
+      response.url().endsWith('/reschedule') &&
+      response.request().method() === 'POST',
+  );
+  await page
+    .getByRole('button', { name: 'Confirm calendar change', exact: true })
+    .click();
+  const resized = await resizedResponse;
+  expect(resized.status()).toBe(200);
+  const resizedBooking = await resized.json();
+  expect(
+    (Date.parse(resizedBooking.slot.ends_at) -
+      Date.parse(resizedBooking.slot.starts_at)) /
+      60000,
+  ).toBe(isMobile ? 35 : 40);
+  await expect(changeDialog).toBeHidden();
+  await page.getByRole('button', { name: 'Appointments', exact: true }).click();
   await page
     .getByRole('button', { name: 'Cancel appointment', exact: true })
     .click();

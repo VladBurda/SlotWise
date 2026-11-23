@@ -104,6 +104,7 @@ Completed on 2026-11-21; see `PROGRESS.md` for results and architecture refineme
   grouping, location/staff/resource/status filters, details dialog and bounded range API.
 - Implemented: daily staff/resource timelines, overlapping lanes, buffered spans,
   quantities, historical assignments and DST-aware elapsed-time axes.
-- Next: transactional drag/resize interactions.
-- Then: authenticated realtime delivery, workspace isolation and reconnect consistency.
+- Implemented: same-staff timeline move/resize proposals, keyboard and details-button
+  alternatives, confirmation and versioned transactional rescheduling with safe retries.
+- Next: authenticated realtime delivery, workspace isolation and reconnect consistency.
 - Phase 6 remains incomplete until those behaviors and their verification are delivered.

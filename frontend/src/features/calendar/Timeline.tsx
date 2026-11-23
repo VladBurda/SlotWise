@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { slotLabel, type Booking } from '@/features/bookings/contracts';
 import type { CatalogItem } from '@/features/catalog/contracts';
+import { TimelineCard } from './TimelineCard';
+import type { CalendarProposal } from './CalendarChange';
 import {
   axisTicks,
   daySpan,
@@ -18,6 +20,7 @@ export function Timeline({
   locationId,
   selectedId,
   onSelect,
+  onPropose,
 }: {
   day: string;
   timezone: string;
@@ -27,6 +30,7 @@ export function Timeline({
   locationId: string;
   selectedId: string;
   onSelect: (id: string) => void;
+  onPropose?: (proposal: CalendarProposal) => void;
 }) {
   const span = useMemo(() => daySpan(day, timezone), [day, timezone]);
   const rows = useMemo(
@@ -68,6 +72,14 @@ export function Timeline({
   return (
     <div className="timeline">
       <h3>{heading}</h3>
+      {onPropose && (
+        <p id="timeline-edit-help">
+          Drag a confirmed booking to move it in 15-minute steps; drag its ↔
+          handle to change duration. With a booking focused, use Left/Right to
+          move or Shift+Left/Right to resize. Review each change before saving.
+          Use appointment details for button controls.
+        </p>
+      )}
       <p id="timeline-help">
         {duration / 3600000} elapsed hours · {timezone}. Shaded spans include
         buffers for confirmed bookings. Empty space does not mean bookable time.
@@ -144,7 +156,18 @@ export function Timeline({
                       100;
                     const label = `${entry.booking.customer_name} · ${entry.booking.service_name} · ${slotLabel(entry.booking.slot.starts_at, timezone)} – ${slotLabel(entry.booking.slot.ends_at, timezone)} · ${entry.units} unit${entry.units === 1 ? '' : 's'} · ${entry.booking.status}`;
                     return (
-                      <button
+                      <TimelineCard
+                        booking={entry.booking}
+                        elapsed={duration}
+                        step={(() => {
+                          const service = items.find(
+                            (item) => item.id === entry.booking.service_id,
+                          )?.data;
+                          return service?.kind === 'services'
+                            ? service.duration_step_minutes
+                            : 5;
+                        })()}
+                        onPropose={onPropose}
                         type="button"
                         key={entry.booking.id}
                         className={`timeline-booking ${entry.booking.status}`}
@@ -176,7 +199,7 @@ export function Timeline({
                             {serviceWidth === 0 && ' · Buffer only'}
                           </small>
                         </span>
-                      </button>
+                      </TimelineCard>
                     );
                   })}
                 </div>
