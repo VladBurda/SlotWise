@@ -3,10 +3,10 @@
 Work stops at every phase boundary for user approval. A phase can be implemented
 but still have explicit blocked verification; never treat a skipped gate as a pass.
 
-Current status (2026-11-22): **Phases 1–5 complete and verified** within the documented
-internal booking scope. Availability and backend commits are pushed after agreement;
-the booking UI commit remains local. **Phase 6 calendar views are in progress.** See
-`PROGRESS.md` for the acceptance evidence and remaining operational limitations.
+Current status (2026-11-23): **Phases 1–6 complete and verified** within the documented
+internal booking scope. Commits through `534ccca` are pushed; later calendar work
+remains local pending agreement. See `PROGRESS.md` for acceptance evidence and
+remaining operational limitations.
 
 | Phase | Deliverable | Required gate |
 | --- | --- | --- |
@@ -106,5 +106,6 @@ Completed on 2026-11-21; see `PROGRESS.md` for results and architecture refineme
   quantities, historical assignments and DST-aware elapsed-time axes.
 - Implemented: same-staff timeline move/resize proposals, keyboard and details-button
   alternatives, confirmation and versioned transactional rescheduling with safe retries.
-- Next: authenticated realtime delivery, workspace isolation and reconnect consistency.
-- Phase 6 remains incomplete until those behaviors and their verification are delivered.
+- Implemented: authenticated workspace-scoped SSE invalidation, transactional revision,
+  live access checks, heartbeat timeout, bounded retry and reconnect snapshot refresh.
+- Next phase: public/customer booking flows (Phase 7), after agreement at the phase boundary.

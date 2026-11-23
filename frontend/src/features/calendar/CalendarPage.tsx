@@ -11,6 +11,7 @@ import {
 } from '@/features/bookings/contracts';
 import { loadBookingConfig } from '@/features/bookings/data';
 import { Timeline } from './Timeline';
+import { useCalendarSync } from './useCalendarSync';
 import {
   CalendarChange,
   proposeChange,
@@ -26,6 +27,7 @@ import {
 } from './dates';
 
 export function CalendarPage({ workspace }: { workspace: Workspace }) {
+  const sync = useCalendarSync(workspace.id);
   const [view, setView] = useState<CalendarView>('week');
   const [day, setDay] = useState(
     localDay(new Date().toISOString(), workspace.timezone),
@@ -100,6 +102,12 @@ export function CalendarPage({ workspace }: { workspace: Workspace }) {
       );
     setSelected(null);
   };
+  if (sync.blocked)
+    return (
+      <section className="panel">
+        <p role="alert">{sync.state}</p>
+      </section>
+    );
   return (
     <section className="panel calendar-page" aria-label="Appointment calendar">
       <div className="workspace-toolbar">
@@ -118,6 +126,9 @@ export function CalendarPage({ workspace }: { workspace: Workspace }) {
           Refresh calendar
         </Button>
       </div>
+      <p role="status" aria-live="polite">
+        {sync.state}
+      </p>
       <div className="calendar-controls">
         <label>
           Calendar view

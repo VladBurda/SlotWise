@@ -62,6 +62,7 @@ async function login(page: Page, email: string, value = password) {
 
 test('configure staff, assets and services with qualified matches', async ({
   page,
+  browser,
   request,
   isMobile,
 }) => {
@@ -327,6 +328,29 @@ test('configure staff, assets and services with qualified matches', async ({
     });
   await page.getByRole('button', { name: 'Keep original time' }).click();
   await expect(card).toHaveAttribute('aria-label', originalLabel!);
+  await expect(
+    page.getByText('Live calendar updates connected', { exact: true }),
+  ).toBeVisible();
+  const observerContext = await browser.newContext({
+    storageState: await page.context().storageState(),
+    baseURL: 'http://127.0.0.1:5173',
+  });
+  const observer = await observerContext.newPage();
+  await observer.goto(page.url());
+  await observer.getByRole('button', { name: 'Calendar', exact: true }).click();
+  await observer
+    .getByLabel('Calendar date')
+    .fill(monday.toISOString().slice(0, 10));
+  await observer
+    .getByRole('combobox', { name: 'Calendar view', exact: true })
+    .selectOption('staff');
+  await expect(
+    observer.getByText('Live calendar updates connected', { exact: true }),
+  ).toBeVisible();
+  const observedCard = observer
+    .getByRole('region', { name: 'Staff timeline', exact: true })
+    .getByRole('button', { name: /Jamie Taylor/ });
+  await expect(observedCard).toHaveAttribute('aria-label', originalLabel!);
   await card.press('ArrowRight');
   const movedResponse = page.waitForResponse(
     (response) =>
@@ -339,6 +363,11 @@ test('configure staff, assets and services with qualified matches', async ({
   expect((await movedResponse).status()).toBe(200);
   await expect(changeDialog).toBeHidden();
   await expect(card).not.toHaveAttribute('aria-label', originalLabel!);
+  await expect(observedCard).not.toHaveAttribute('aria-label', originalLabel!, {
+    timeout: 10000,
+  });
+  const beforeOffline = await observedCard.getAttribute('aria-label');
+  await observerContext.setOffline(true);
   if (isMobile) {
     await card.click();
     await page.getByRole('button', { name: 'Extend by 5 minutes' }).click();
@@ -373,6 +402,15 @@ test('configure staff, assets and services with qualified matches', async ({
       60000,
   ).toBe(isMobile ? 35 : 40);
   await expect(changeDialog).toBeHidden();
+  await expect(observedCard).toHaveAttribute('aria-label', beforeOffline!);
+  await observerContext.setOffline(false);
+  await expect(
+    observer.getByText('Live calendar updates connected', { exact: true }),
+  ).toBeVisible({ timeout: 15000 });
+  await expect(observedCard).not.toHaveAttribute('aria-label', beforeOffline!, {
+    timeout: 10000,
+  });
+  await observerContext.close();
   await page.getByRole('button', { name: 'Appointments', exact: true }).click();
   await page
     .getByRole('button', { name: 'Cancel appointment', exact: true })

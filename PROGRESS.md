@@ -4,9 +4,9 @@ Updated: 2026-11-23 (Europe/Berlin).
 
 ## Current status
 
-**Phases 1–5 are complete and verified within the documented boundaries.**
-All verified commits through `534ccca` are pushed. Phase 6 calendar drag/resize
-is implemented locally; authenticated realtime delivery remains next.
+**Phases 1–6 are complete and verified within the documented boundaries.**
+Commits through `534ccca` are pushed. Calendar drag/resize and authenticated realtime
+delivery are implemented locally; Phase 7 public/customer booking is next after agreement.
 Phase 2 was authorized by the continuation request after closing the Phase 1 Docker gap.
 
 ## Phase 1 retained
@@ -452,3 +452,39 @@ ESLint, Prettier and the production Compose build/readiness checks passed. Deskt
 mobile confirmation screenshots were reviewed and retained. Backend code is unchanged;
 the previous 101-test backend result was not rerun. New work remains local pending push
 agreement. Authenticated realtime delivery and reconnect consistency remain outstanding.
+
+## Phase 6 — realtime and reconnect completion (2026-11-23)
+
+Added authenticated workspace-scoped SSE calendar invalidation. Migration 0006 stores
+a bigint revision on each workspace; booking transactions increment it atomically with
+allocations/history/receipts. Replayed requests and rejected writes do not advance it.
+The stream reads revision and authorization every two seconds using short database
+sessions. It emits no customer payloads, rejects untrusted origins, detects revoked
+sessions/memberships, and rotates after about 50 seconds.
+
+Each connection triggers a full scoped calendar refresh, recovering changes missed
+offline or during API restarts without relying on event replay cursors. The client
+pauses hidden/offline calendars, resumes on return, refreshes expired cookies through
+the existing API helper, and retries failures with backoff capped at 30 seconds. A
+15-second heartbeat watchdog handles silent transport stalls. Lost workspace access
+stops reconnection and clears booking-related cached data. Late callbacks after closing
+a stream cannot invalidate another calendar. Query errors remain visible independently
+of stream connection status.
+
+Verification: final full backend suite **103 passed**; the frontend suite passed all
+**48 existing tests**, then the final focused sync suite passed **4 tests**, including
+the added heartbeat watchdog case (**49 frontend tests total**). The full desktop/mobile
+browser suite passed **12 checks**; both affected booking/reconnect scenarios passed
+again on the final heartbeat-enabled build. Two independent browser contexts verify
+live booking updates and recovery of a resize missed while offline. PostgreSQL tests
+cover revision atomicity/replay, tenant isolation, stream origin policy and live role
+revocation. TypeScript, ESLint, Prettier, Ruff and strict mypy passed. Compose build and
+readiness passed, and Alembic reported no model/migration drift. The foundation test's
+expected migration head was updated from 0005 to 0006 and verified in the final suite.
+
+Phase 6 is complete within the internal owner/manager scope. Updates are detected at
+roughly two-second intervals, with one short authorization/revision read per visible
+client; higher-volume fanout requires measurement before further optimization. Catalog
+configuration changes still require reopening/refreshing setup data. No dependencies
+were added. The drag/resize commit and this realtime milestone remain local pending
+push agreement. Stop at the phase boundary; Phase 7 is the public/customer booking flow.

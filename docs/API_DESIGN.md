@@ -229,3 +229,24 @@ filters combine with the workspace restriction. Omitted status includes both sta
 Employee/resource matching uses persisted booking snapshots, including cancelled
 history. Unknown/nonmatching filter IDs return an empty list, without looking up or
 disclosing entities from other workspaces. Owner/manager access remains required.
+
+## Phase 6 calendar synchronization
+
+`GET /workspaces/{workspace_id}/calendar/revision` returns `{"revision":"0"}`
+(a decimal string to preserve bigint precision). It requires the same verified
+owner/manager access as booking lists. Use the ordinary authenticated API path before
+opening a stream so expired cookies can be refreshed.
+
+`GET /workspaces/{workspace_id}/calendar/events` is a cookie-authenticated SSE stream.
+Untrusted Origin/cross-site fetches are rejected. Initial authentication/access errors
+return ordinary HTTP errors. Events are `ready` and `changed` with a revision string,
+`heartbeat` with `{}`, `expired` for session expiry/revocation, `access-lost` for lost
+workspace access, and `reconnect` for planned connection rotation. There are no customer
+details in event payloads. The stream checks authorization and revision every two seconds
+and rotates after 25 checks; it releases database connections between checks.
+
+Clients refetch the full active calendar on every `ready` and `changed`, including after
+an offline period. Last-Event-ID is not a replay contract. Updates collapse to the latest
+revision and the current listing is authoritative. Refresh failures must not be mistaken
+for fresh data. Browser clients close streams when hidden/offline and reconnect on return;
+heartbeats detect silently stalled transports. SSE buffering is disabled in the response.

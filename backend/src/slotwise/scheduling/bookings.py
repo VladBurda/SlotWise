@@ -135,7 +135,7 @@ class BookingService(SchedulingService):
         appointment_id: UUID | None,
     ) -> BookingView:
         await self.db.execute(text("SET LOCAL lock_timeout = '5s'"))
-        await self.access(workspace_id, {"owner", "manager"}, lock=True)
+        workspace, _ = await self.access(workspace_id, {"owner", "manager"}, lock=True)
         action = (
             "cancel"
             if isinstance(data, CancelInput)
@@ -233,5 +233,6 @@ class BookingService(SchedulingService):
             )
         )
         self.audit(workspace_id, f"booking.{action}", row.id)
+        workspace.calendar_revision += 1
         await self.db.commit()
         return receipt

@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Literal
 from uuid import UUID, uuid4
 
-from sqlalchemy import CheckConstraint, DateTime, ForeignKey, String, UniqueConstraint
+from sqlalchemy import BigInteger, CheckConstraint, DateTime, ForeignKey, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from slotwise.auth.models import now
@@ -20,6 +20,7 @@ class Workspace(Base):
     slug: Mapped[str] = mapped_column(String(64))
     timezone: Mapped[str] = mapped_column(String(64), default="UTC")
     suspended: Mapped[bool] = mapped_column(default=False)
+    calendar_revision: Mapped[int] = mapped_column(BigInteger, default=0, server_default="0")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
 
 

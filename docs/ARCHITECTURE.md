@@ -273,9 +273,9 @@ API filters service-time overlap and snapshot assignments; the browser groups re
 by IANA-zone civil dates. Civil arithmetic uses UTC noon to avoid browser-zone DST
 normalization. A padded UTC query envelope includes all possible offsets; exact local
 grouping removes the padding from display. Large result sets stop with an explicit
-error at 5,000 records. This is not a realtime or snapshot-consistent paginated feed;
-users can refresh after concurrent changes. Timelines, drag/resize and realtime remain
-separate Phase 6 milestones.
+error at 5,000 records. Pagination itself is not snapshot-consistent; the realtime
+invalidation feed refreshes it after concurrent booking changes. Manual refresh remains
+available.
 
 Daily staff/resource timelines reuse the filtered booking snapshots. Pure layout code
 groups assignments, clips reservation spans to actual local-day UTC bounds and partitions
@@ -295,5 +295,27 @@ availability and resource allocation transactionally. The persisted card remains
 original position until success, so a rejected proposal does not leave an optimistic
 placement behind. Success and rejection invalidate calendar, booking and availability
 queries. Uncertain responses lock modal dismissal and reuse the exact command/key;
-as with the booking editor, requests are not persisted across page reloads. Realtime
-event subscriptions and reconnect consistency remain outstanding.
+as with the booking editor, requests are not persisted across page reloads.
+
+Migration 0006 adds a bigint workspace calendar revision. Booking mutations increment
+it under the existing workspace lock in the same transaction as allocations, history
+and receipts. Rollbacks and idempotency replays do not increment it. Realtime readers
+perform a short authenticated database read every two seconds and send SSE invalidation
+signals when the revision changes. Connections hold no database session while waiting;
+this works across API processes and restarts without an in-memory broadcaster. Events
+contain only revision strings, never appointment or customer payloads.
+
+Each connection emits `ready`, causing a full scoped query refresh, so reconnects do
+not depend on retained event cursors. Streams recheck session, verified identity,
+workspace suspension and owner/manager membership before every heartbeat/change. They
+rotate after about 50 seconds; access expiry uses the normal API refresh path and
+revocation clears cached booking data and stops the connection. The client pauses on
+hidden/offline pages, ignores late callbacks after disposal, retries with exponential
+backoff capped at 30 seconds, and reconnects if no event arrives for 15 seconds. Nginx
+honors `X-Accel-Buffering: no`; heartbeat events keep the stream active.
+
+This delivers booking updates with approximately two-second detection latency, not
+instant per-write fanout. Database reads scale with visible calendar clients; measure
+that cost in Phase 11 before replacing the bounded polling with a shared notifier.
+Configuration changes do not publish booking revisions; reopen or refresh setup data
+after editing configuration. Notification dispatch remains separate Phase 8 work.
