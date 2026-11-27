@@ -15,11 +15,18 @@ from slotwise.tenants.schemas import InviteInput, WorkspaceInput, WorkspaceView
 
 
 class TenantService:
-    def __init__(self, db: AsyncSession, settings: Settings, current: Identity):
+    def __init__(self, db: AsyncSession, settings: Settings, current: Identity | None):
         self.db = db
         self.settings = settings
-        self.current = current
-        require_verified(current)
+        self._current = current
+        if current is not None:
+            require_verified(current)
+
+    @property
+    def current(self) -> Identity:
+        if self._current is None:
+            raise DomainError(401, "unauthenticated", "Please sign in.")
+        return self._current
 
     def audit(self, workspace_id: UUID, action: str, object_id: UUID) -> None:
         self.db.add(
@@ -34,6 +41,7 @@ class TenantService:
     async def access(
         self, workspace_id: UUID, roles: set[str] | None = None, lock: bool = False
     ) -> tuple[Workspace, Membership]:
+        current = self.current
         query = select(Workspace).where(
             Workspace.id == workspace_id, Workspace.suspended.is_(False)
         )
@@ -41,7 +49,7 @@ class TenantService:
             query = query.with_for_update()
         workspace = await self.db.scalar(query)
         membership = await self.db.get(
-            Membership, (workspace_id, self.current.user.id), populate_existing=True
+            Membership, (workspace_id, current.user.id), populate_existing=True
         )
         if workspace is None or membership is None:
             raise DomainError(404, "workspace_not_found", "Workspace not found.")

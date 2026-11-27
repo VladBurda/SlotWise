@@ -16,6 +16,7 @@ import {
 } from './api';
 import { WorkspaceForm } from './WorkspaceForm';
 import { TeamPanel } from './TeamPanel';
+import { BookingPageSettings } from '@/features/portal/BookingPageSettings';
 import { BusinessSettings } from '@/features/business/BusinessSettings';
 const CatalogPage = lazy(() =>
   import('@/features/catalog/CatalogPage').then((module) => ({
@@ -122,6 +123,7 @@ function VerifiedWorkspace({ user }: { user: User }) {
               catalog: 'Scheduling setup',
               bookings: 'Appointments',
               calendar: 'Calendar',
+              portal: 'Booking page',
             }).map(([key, label]) => (
               <Button
                 key={key}
@@ -132,7 +134,9 @@ function VerifiedWorkspace({ user }: { user: User }) {
               </Button>
             ))}
           </nav>
-          {section === 'calendar' ? (
+          {section === 'portal' ? (
+            <BookingPageSettings key={selected.id} workspace={selected} />
+          ) : section === 'calendar' ? (
             <Suspense fallback={<p role="status">Loading calendar…</p>}>
               <CalendarPage key={selected.id} workspace={selected} />
             </Suspense>

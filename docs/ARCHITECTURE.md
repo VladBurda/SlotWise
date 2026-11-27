@@ -319,3 +319,27 @@ instant per-write fanout. Database reads scale with visible calendar clients; me
 that cost in Phase 11 before replacing the bounded polling with a shared notifier.
 Configuration changes do not publish booking revisions; reopen or refresh setup data
 after editing configuration. Notification dispatch remains separate Phase 8 work.
+
+Phase 7 adds explicit customer ownership and opt-in publication in migration 0007.
+Existing internal appointments retain null customer ownership; matching a name/email
+does not grant historical access. The customer booking service changes only the access
+boundary and ownership assignment. It reuses the same workspace guard, exact-slot
+revalidation, exclusion-protected allocations, policy/version checks, idempotency receipts
+and realtime revision transaction. Customer request digests include their audience/owner
+scope; legacy internal request digests stay compatible.
+
+Anonymous availability builds a snapshot with an explicitly anonymous read service.
+TenantService's current-identity property still rejects anonymous access to privileged
+operations; authenticated routes keep their Current dependency. Public projection code
+returns allowlisted fields and strips allocation IDs from both availability and receipts.
+Customer list and reschedule-exclusion queries are constrained to explicit ownership.
+Publishing is owner-only and uses a locked version check; the booking transaction rechecks
+publication after taking the workspace lock to avoid accepting a stale public-page state.
+
+Guests verify their email via a one-use 15-minute action token, then use normal session
+cookies to manage bookings without choosing a password. Token consumption locks the user
+before the action token, matching existing auth lock ordering, and is committed with
+session creation. Email links use fragments and the encrypted auth-mail outbox. Reuse,
+expiry and cross-customer access are rejected. The portal explains that this creates or
+signs into a customer account, rather than implying an anonymous persistent guest token.
+UI receipt parsing shares the same frozen-command retry hook as internal booking writes.

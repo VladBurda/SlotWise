@@ -28,7 +28,7 @@ async def test_postgres_migration_and_exclusion_extension() -> None:
     try:
         async with engine.connect() as connection:
             assert (
-                await connection.scalar(text("SELECT version_num FROM alembic_version")) == "0006"
+                await connection.scalar(text("SELECT version_num FROM alembic_version")) == "0007"
             )
             assert (
                 await connection.scalar(

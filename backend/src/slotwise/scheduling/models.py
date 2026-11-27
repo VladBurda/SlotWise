@@ -42,6 +42,7 @@ class Appointment(Base):
     service_kind: Mapped[str] = mapped_column(String(12), default="services")
     location_id: Mapped[UUID]
     created_by: Mapped[UUID] = mapped_column(ForeignKey("users.id"))
+    customer_user_id: Mapped[UUID | None] = mapped_column(ForeignKey("users.id"), index=True)
     customer_name: Mapped[str] = mapped_column(String(100))
     status: Mapped[str] = mapped_column(String(12), default="confirmed")
     version: Mapped[int] = mapped_column(default=1)

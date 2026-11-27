@@ -8,13 +8,19 @@ export function useBookingAction(
   onSaved: (booking: Booking) => void,
   onRejected: () => void,
 ) {
+  return useRequestAction(onSaved, onRejected, bookingSchema.parse);
+}
+
+export function useRequestAction<T>(
+  onSaved: (value: T) => void,
+  onRejected: () => void,
+  parse: (value: unknown) => T,
+) {
   const [command, setCommand] = useState<Command | null>(null);
   const mutation = useMutation({
     retry: false,
     mutationFn: async (value: Command) =>
-      bookingSchema.parse(
-        await api(value.path, 'POST', value.body, true, value.key),
-      ),
+      parse(await api(value.path, 'POST', value.body, true, value.key)),
     onSuccess: (booking) => {
       setCommand(null);
       onSaved(booking);

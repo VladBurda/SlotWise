@@ -33,7 +33,9 @@ async function emailLink(
     `http://127.0.0.1:8025/api/v1/message/${id}`,
   );
   const mail = z.object({ Text: z.string() }).parse(await result.json());
-  const match = mail.Text.match(/http:\/\/localhost:5173(\/account\/[^\s]+)/);
+  const match = mail.Text.match(
+    /http:\/\/localhost:5173(\/(?:account|book)\/[^\s]+)/,
+  );
   if (!match?.[1]) throw new Error('Expected local account link in email');
   return match[1];
 }
@@ -508,6 +510,119 @@ test('configure staff, assets and services with qualified matches', async ({
       () => document.documentElement.scrollWidth <= window.innerWidth,
     ),
   ).toBe(true);
+  await page.getByRole('button', { name: 'Booking page', exact: true }).click();
+  await page.getByRole('button', { name: 'Publish booking page' }).click();
+  await expect(
+    page.getByText('Status: Published', { exact: true }),
+  ).toBeVisible();
+  const customerContext = await browser.newContext({
+    baseURL: 'http://127.0.0.1:5173',
+    viewport: page.viewportSize()!,
+    isMobile,
+    hasTouch: isMobile,
+  });
+  try {
+    const customer = await customerContext.newPage();
+    const portalUrl = `/book/catalog-${run}`;
+    const guestEmail = `guest-${run}@example.com`;
+    await customer.goto(portalUrl);
+    await customer
+      .getByLabel('Your name', { exact: true })
+      .fill('Portal Customer');
+    await customer
+      .getByLabel('Email address', { exact: true })
+      .fill(guestEmail);
+    await customer
+      .getByRole('button', { name: 'Email me a secure link' })
+      .click();
+    await expect(
+      customer.getByRole('status').filter({ hasText: 'Check your email' }),
+    ).toBeVisible();
+    await customer.goto(await emailLink(request, guestEmail, 'booking access'));
+    await customer
+      .getByRole('button', { name: 'Verify email and continue' })
+      .click();
+    await expect(
+      customer.getByRole('status').filter({ hasText: 'Email verified' }),
+    ).toBeVisible();
+    await customer
+      .getByRole('combobox', { name: 'Location', exact: true })
+      .selectOption({ label: 'Main workshop' });
+    await customer
+      .getByRole('combobox', { name: 'Service', exact: true })
+      .selectOption({ label: 'Vehicle diagnostics' });
+    await customer
+      .getByLabel('Date at location')
+      .fill(monday.toISOString().slice(0, 10));
+    await customer
+      .getByRole('button', { name: 'Find available times' })
+      .click();
+    await customer
+      .getByRole('group', { name: 'Available appointment times' })
+      .getByRole('button')
+      .first()
+      .click();
+    if (process.env.SLOTWISE_PORTAL_CAPTURE === '1')
+      await customer.screenshot({
+        path: `../docs/screenshots/portal-booking-${isMobile ? 'mobile' : 'desktop'}.png`,
+        fullPage: true,
+      });
+    await customer.getByRole('button', { name: 'Confirm my booking' }).click();
+    await expect(
+      customer
+        .getByRole('status')
+        .filter({ hasText: 'Your appointment is confirmed' }),
+    ).toBeVisible();
+    await customer.reload();
+    await customer
+      .getByRole('button', { name: 'View my appointments' })
+      .click();
+    await expect(
+      customer.getByRole('heading', { name: 'Vehicle diagnostics' }),
+    ).toBeVisible();
+    await customer
+      .getByRole('button', { name: 'Change appointment', exact: true })
+      .click();
+    await customer
+      .getByRole('button', { name: 'Find available times' })
+      .click();
+    await customer
+      .getByRole('group', { name: 'Available appointment times' })
+      .getByRole('button')
+      .nth(1)
+      .click();
+    await customer
+      .getByRole('button', { name: 'Confirm appointment change' })
+      .click();
+    await expect(
+      customer
+        .getByRole('status')
+        .filter({ hasText: 'Your appointment is confirmed' }),
+    ).toBeVisible();
+    await customer
+      .getByRole('button', { name: 'Cancel appointment', exact: true })
+      .click();
+    await customer
+      .getByRole('button', { name: 'Confirm cancellation' })
+      .click();
+    await expect(
+      customer
+        .getByRole('status')
+        .filter({ hasText: 'Your appointment has been cancelled' }),
+    ).toBeVisible();
+    if (process.env.SLOTWISE_PORTAL_CAPTURE === '1')
+      await customer.screenshot({
+        path: `../docs/screenshots/portal-history-${isMobile ? 'mobile' : 'desktop'}.png`,
+        fullPage: true,
+      });
+    expect(
+      await customer.evaluate(
+        () => document.documentElement.scrollWidth <= window.innerWidth,
+      ),
+    ).toBe(true);
+  } finally {
+    await customerContext.close();
+  }
 });
 
 test.describe('account lifecycle against PostgreSQL and Mailpit', () => {

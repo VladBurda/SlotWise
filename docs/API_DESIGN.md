@@ -250,3 +250,43 @@ an offline period. Last-Event-ID is not a replay contract. Updates collapse to t
 revision and the current listing is authoritative. Refresh failures must not be mistaken
 for fresh data. Browser clients close streams when hidden/offline and reconnect on return;
 heartbeats detect silently stalled transports. SSE buffering is disabled in the response.
+
+## Phase 7 public and customer booking
+
+Workspace owners opt in with `PATCH /workspaces/{id}/booking-page` using
+`{enabled, version}`; owner/manager `GET` returns those settings. Updates are locked,
+versioned and audited. New pages default to unpublished. The share URL is `/book/{slug}`.
+
+Public endpoints under `/public/{slug}` are rate limited:
+
+- `GET` returns active locations, service descriptions/durations/prices, staff display
+  names and cancellation notice. It omits resources, skills, leave and internal schedules.
+- `GET /availability` accepts the existing service/location/date/duration/staff search
+  parameters, but returns only start/end times, timezone and truncation status. Anonymous
+  callers cannot exclude another appointment from capacity checks.
+- Authenticated verified customers use `GET /my-bookings?offset=0&limit=50` for their
+  own history and `GET /my-availability` for an ownership-checked rescheduling preview.
+- `POST /bookings`, `/bookings/{id}/reschedule` and `/bookings/{id}/cancel` use existing
+  booking input/version/idempotency rules. Customer receipts omit staff/unit allocations.
+
+Customer ownership is an explicit user foreign key, never inferred from a name or email
+submitted in a booking payload. Customers do not gain workspace membership. Internal
+booking/calendar/catalog endpoints retain owner/manager authorization. Unpublishing
+blocks new bookings but preserves owned history and permitted cancellation; suspension
+blocks all portal access. The UI offers rescheduling while the public catalog is enabled.
+
+`POST /auth/booking-access` accepts `{name,email,slug}` and returns a generic 202.
+It queues a 15-minute, one-use email sign-in link in a URL fragment. New visitors get a
+customer identity with an undisclosed random password; existing users retain their name
+and password. `POST /auth/booking-login` consumes `{token}`, verifies email ownership,
+invalidates outstanding booking links for that identity and issues the standard HttpOnly
+session/refresh cookies. Both endpoints require Origin/CSRF and auth rate limiting.
+Email access authenticates the same SlotWise identity as password sign-in; any existing
+workspace permissions remain attached to that identity. No token goes in a URL query.
+Confirmation requires an explicit button click, so fetching an email link does not consume
+it. The frontend removes the fragment and supports same-page fragment navigation.
+
+Booking confirmation is shown in the portal with a persistent reference. Booking emails,
+reminders and waitlist delivery remain Phase 8 work; verification email delivery uses the
+existing encrypted authentication outbox. Uncertain writes reuse their original command
+and key while the editor remains open.

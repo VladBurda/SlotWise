@@ -21,6 +21,8 @@ class Workspace(Base):
     timezone: Mapped[str] = mapped_column(String(64), default="UTC")
     suspended: Mapped[bool] = mapped_column(default=False)
     calendar_revision: Mapped[int] = mapped_column(BigInteger, default=0, server_default="0")
+    public_booking_enabled: Mapped[bool] = mapped_column(default=False, server_default="false")
+    public_booking_version: Mapped[int] = mapped_column(default=0, server_default="0")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
 
 

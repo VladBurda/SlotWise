@@ -31,6 +31,11 @@ class LoginInput(EmailInput):
     password: str = Field(min_length=1, max_length=128)
 
 
+class BookingAccessInput(EmailInput):
+    name: str = Field(min_length=1, max_length=100)
+    slug: str = Field(min_length=3, max_length=64, pattern=r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
+
+
 class TokenInput(BaseModel):
     token: str = Field(min_length=40, max_length=128)
 

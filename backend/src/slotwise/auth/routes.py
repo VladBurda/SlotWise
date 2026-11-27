@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, Request, Response
 
 from slotwise.auth.dependencies import Current, Db, cookie_name, csrf, rate_limit
 from slotwise.auth.schemas import (
+    BookingAccessInput,
     EmailInput,
     LoginInput,
     Message,
@@ -123,6 +124,19 @@ async def request_reset(data: EmailInput, request: Request, db: Db) -> Message:
 async def reset_password(data: ResetInput, request: Request, db: Db) -> Message:
     await AuthService(db, request.app.state.settings).consume(data.token, "reset", data.password)
     return Message(message="Password updated. Please sign in again on all devices.")
+
+
+@writes.post("/booking-access", response_model=Message, status_code=202)
+async def booking_access(data: BookingAccessInput, request: Request, db: Db) -> Message:
+    await AuthService(db, request.app.state.settings).booking_access(data)
+    return Message(message="Check your email for a one-use booking access link.")
+
+
+@writes.post("/booking-login", response_model=UserView)
+async def booking_login(data: TokenInput, request: Request, response: Response, db: Db) -> UserView:
+    user, credentials = await AuthService(db, request.app.state.settings).booking_login(data.token)
+    set_cookies(response, request.app.state.settings, credentials)
+    return UserView.model_validate(user)
 
 
 router.include_router(writes)

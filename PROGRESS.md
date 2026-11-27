@@ -1,12 +1,12 @@
 # SlotWise progress
 
-Updated: 2026-11-23 (Europe/Berlin).
+Updated: 2026-11-27 (Europe/Berlin).
 
 ## Current status
 
-**Phases 1–6 are complete and verified within the documented boundaries.**
-Commits through `534ccca` are pushed. Calendar drag/resize and authenticated realtime
-delivery are implemented locally; Phase 7 public/customer booking is next after agreement.
+**Phases 1–7 are complete and verified within the documented boundaries.**
+Commits through `534ccca` are pushed. Calendar drag/resize, realtime and the customer
+portal remain local pending push agreement. Phase 8 notifications/waitlist comes next.
 Phase 2 was authorized by the continuation request after closing the Phase 1 Docker gap.
 
 ## Phase 1 retained
@@ -488,3 +488,42 @@ client; higher-volume fanout requires measurement before further optimization. C
 configuration changes still require reopening/refreshing setup data. No dependencies
 were added. The drag/resize commit and this realtime milestone remain local pending
 push agreement. Stop at the phase boundary; Phase 7 is the public/customer booking flow.
+
+## Phase 7 — public/customer portal (2026-11-27)
+
+Added owner-controlled publication and share URLs at `/book/{slug}`. Pages default to
+unpublished and expose active services, location addresses/timezones, staff display
+names, prices/durations and cancellation notice. Availability and customer receipts omit
+internal unit/resource allocations. Customers can choose optional staff, verify an email,
+confirm a booking, reload their history, reschedule and cancel under business policy.
+The portal shows a persistent booking reference; notification email delivery is Phase 8.
+
+Guests use a 15-minute, one-use email sign-in link without choosing a password. The link
+creates or signs into a normal customer identity, is kept in the URL fragment, requires
+an explicit confirmation action, and issues existing HttpOnly session cookies. Requests
+are Origin/CSRF checked and rate limited. Existing users keep their password and name.
+Reusing or consuming an expired link fails; consuming a link invalidates the identity's
+other outstanding booking links. Authentication email delivery reuses the encrypted
+outbox. Same-page email-link navigation and reopening verification after a prior success
+are covered by a UI regression test.
+
+Migration 0007 adds publication state/version and explicit appointment customer ownership.
+Legacy internal appointments keep null customer ownership; no name/email matching grants
+access. Customer history, changes and exclusion previews are ownership-scoped. Public
+writes reuse the transactional scheduler, workspace guard, version checks, idempotency
+and realtime revision. Two competing customers cannot claim the same exclusive slot.
+Unpublishing blocks new bookings while preserving owned history and permitted cancellation.
+The UI offers rescheduling while the public catalog remains available. Suspended workspaces
+remain unavailable. Customer identities do not acquire workspace membership.
+
+Backend verification passed **107 tests**. The frontend
+suite passed **54 tests**; the affected five portal tests also passed after final form/link
+fixes. Browser checks exercise owner publication and a separate guest context through
+real Mailpit email, create/reload/reschedule/cancel on desktop and mobile. Screenshots
+are retained under `docs/screenshots/portal-*.png`. TypeScript, ESLint, Ruff and strict
+mypy passed; migration 0007 applied successfully and Alembic reported no model drift.
+No dependencies were added. Uncertain writes retain their command/key only while the
+editor remains open. The final full browser suite passed **12 desktop/mobile checks**.
+Prettier, production Compose build/readiness and final screenshot review passed.
+Phase 7 is complete. Its commit remains local alongside the two unpushed Phase 6 commits.
+Stop before Phase 8 notifications and waitlist work pending phase-boundary agreement.

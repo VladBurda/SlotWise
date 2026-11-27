@@ -23,9 +23,18 @@ from slotwise.scheduling.schemas import (
     Slot,
 )
 from slotwise.scheduling.service import SchedulingService
+from slotwise.tenants.models import Workspace
 
 
 class BookingService(SchedulingService):
+    @property
+    def customer_id(self) -> UUID | None:
+        return None
+
+    async def booking_access(self, workspace_id: UUID, appointment_id: UUID | None) -> Workspace:
+        workspace, _ = await self.access(workspace_id, {"owner", "manager"}, lock=True)
+        return workspace
+
     @staticmethod
     def booking_view(row: Appointment) -> BookingView:
         return BookingView.model_validate(
@@ -135,7 +144,7 @@ class BookingService(SchedulingService):
         appointment_id: UUID | None,
     ) -> BookingView:
         await self.db.execute(text("SET LOCAL lock_timeout = '5s'"))
-        workspace, _ = await self.access(workspace_id, {"owner", "manager"}, lock=True)
+        workspace = await self.booking_access(workspace_id, appointment_id)
         action = (
             "cancel"
             if isinstance(data, CancelInput)
@@ -145,7 +154,12 @@ class BookingService(SchedulingService):
         )
         digest = hashlib.sha256(
             json.dumps(
-                {"action": action, "id": str(appointment_id), "data": data.model_dump(mode="json")},
+                {
+                    "action": action,
+                    "id": str(appointment_id),
+                    "data": data.model_dump(mode="json"),
+                    **({"customer_id": str(self.customer_id)} if self.customer_id else {}),
+                },
                 sort_keys=True,
                 separators=(",", ":"),
             ).encode()
@@ -183,6 +197,7 @@ class BookingService(SchedulingService):
                     id=uuid4(),
                     workspace_id=workspace_id,
                     created_by=self.current.user.id,
+                    customer_user_id=self.customer_id,
                     version=1,
                     status="confirmed",
                 )

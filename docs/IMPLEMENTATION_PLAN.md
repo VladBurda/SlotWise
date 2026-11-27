@@ -3,8 +3,8 @@
 Work stops at every phase boundary for user approval. A phase can be implemented
 but still have explicit blocked verification; never treat a skipped gate as a pass.
 
-Current status (2026-11-23): **Phases 1–6 complete and verified** within the documented
-internal booking scope. Commits through `534ccca` are pushed; later calendar work
+Current status (2026-11-27): **Phases 1–7 complete and verified** within the documented scope.
+Commits through `534ccca` are pushed; later calendar and customer portal work
 remains local pending agreement. See `PROGRESS.md` for acceptance evidence and
 remaining operational limitations.
 
@@ -109,3 +109,13 @@ Completed on 2026-11-21; see `PROGRESS.md` for results and architecture refineme
 - Implemented: authenticated workspace-scoped SSE invalidation, transactional revision,
   live access checks, heartbeat timeout, bounded retry and reconnect snapshot refresh.
 - Next phase: public/customer booking flows (Phase 7), after agreement at the phase boundary.
+
+## Phase 7 milestones
+
+- Implemented: opt-in public booking pages with share URLs and redacted catalog/slots.
+- Implemented: one-use email verification/sign-in for passwordless customer access.
+- Implemented: customer booking confirmation, paginated owned history, reschedule/cancel.
+- Implemented: ownership, expiry/reuse, publication/CSRF, race and browser lifecycle tests.
+- Verified: 107 backend tests, 54 frontend tests, 12 full-stack desktop/mobile checks,
+  migration consistency, build/readiness and lint/type/format gates. New commits stay local.
+- Next phase: notifications and cancellation waitlist (Phase 8), after phase-boundary agreement.

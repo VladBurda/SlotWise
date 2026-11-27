@@ -9,12 +9,12 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from slotwise.auth.models import ActionToken, RefreshToken, Session, User, now
-from slotwise.auth.schemas import RegisterInput
+from slotwise.auth.schemas import BookingAccessInput, RegisterInput
 from slotwise.auth.security import DUMMY_HASH, digest, hasher, token, verify_password
 from slotwise.core.config import Settings
 from slotwise.core.errors import DomainError
 from slotwise.notifications.mail import queue_mail
-from slotwise.tenants.models import AuditLog
+from slotwise.tenants.models import AuditLog, Workspace
 
 
 @dataclass
@@ -29,6 +29,85 @@ class AuthService:
     def __init__(self, db: AsyncSession, settings: Settings):
         self.db = db
         self.settings = settings
+
+    async def booking_access(self, data: BookingAccessInput) -> None:
+        workspace = await self.db.scalar(
+            select(Workspace).where(Workspace.slug == data.slug, Workspace.suspended.is_(False))
+        )
+        if workspace is None:
+            return
+        # Random credentials are never disclosed; email proof is required before booking.
+        encoded = await asyncio.to_thread(hasher.hash, token())
+        await self.db.execute(
+            insert(User)
+            .values(
+                id=uuid4(),
+                email=str(data.email),
+                name=data.name.strip() or "Customer",
+                password_hash=encoded,
+                verified=False,
+                created_at=now(),
+            )
+            .on_conflict_do_nothing(index_elements=["email"])
+        )
+        user = await self.db.scalar(
+            select(User).where(User.email == str(data.email)).with_for_update()
+        )
+        assert user is not None
+        raw = token()
+        self.db.add(
+            ActionToken(
+                token_hash=digest(raw),
+                user_id=user.id,
+                purpose="booking",
+                expires_at=now() + timedelta(minutes=15),
+            )
+        )
+        link = f"{self.settings.public_url.rstrip('/')}/book/{data.slug}#token={raw}"
+        queue_mail(
+            self.db,
+            self.settings,
+            user.email,
+            "Your SlotWise booking access link",
+            f"Verify your email to book and manage your appointments.\n\n{link}\n\n"
+            "This one-use sign-in link expires in 15 minutes. "
+            "Ignore it if you did not request it.",
+        )
+        await self.db.commit()
+
+    async def booking_login(self, raw: str) -> tuple[User, Credentials]:
+        action = await self.db.get(ActionToken, digest(raw))
+        if action is None or action.purpose != "booking":
+            raise DomainError(400, "invalid_link", "This link is invalid or expired.")
+        user = await self.db.scalar(select(User).where(User.id == action.user_id).with_for_update())
+        action = await self.db.scalar(
+            select(ActionToken)
+            .where(ActionToken.token_hash == digest(raw))
+            .with_for_update()
+            .execution_options(populate_existing=True)
+        )
+        if user is None or action is None or action.consumed or action.expires_at <= now():
+            raise DomainError(400, "invalid_link", "This link is invalid or expired.")
+        user.verified = True
+        await self.db.execute(
+            update(ActionToken)
+            .where(ActionToken.user_id == user.id, ActionToken.purpose == "booking")
+            .values(consumed=True)
+        )
+        session = Session(
+            id=uuid4(),
+            user_id=user.id,
+            expires_at=now() + timedelta(seconds=self.settings.session_seconds),
+        )
+        credentials = await self.credentials(session, token())
+        self.db.add(session)
+        await self.db.flush()
+        self.db.add(RefreshToken(token_hash=digest(credentials.refresh), session_id=session.id))
+        self.db.add(
+            AuditLog(actor_id=user.id, action="session.booking_login", object_id=str(session.id))
+        )
+        await self.db.commit()
+        return user, credentials
 
     async def action(self, user: User, purpose: str) -> None:
         raw = token()
